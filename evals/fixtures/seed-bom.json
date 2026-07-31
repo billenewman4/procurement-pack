@@ -1,0 +1,16 @@
+{
+  "project": { "id": "p1", "name": "arduino-dogfood", "created_at": "2026-07-28" },
+  "specs": [
+    { "id": "s1", "category": "power", "spec": "12V wall supply in; 5V rail max 3A continuous; reverse-polarity protection required", "updated_at": "2026-07-28" },
+    { "id": "s2", "category": "connectors", "spec": "JST-XH for signal, screw terminals for power", "updated_at": "2026-07-28" }
+  ],
+  "line_items": [
+    { "id": "li1", "description": "M3x10 socket head cap screws, stainless, 100-pack", "part_number": "91292A113", "vendor": "McMaster-Carr", "product_url": null, "qty": 1, "unit_price": 8.42, "status": "ordered", "source": "search", "ordered_at": "2026-07-31", "eta": null, "notes": "order 7213KWCD" },
+    { "id": "li2", "description": "DC barrel jack, panel mount, 5.5x2.1mm", "part_number": "7581K21", "vendor": "McMaster-Carr", "product_url": null, "qty": 2, "unit_price": 3.15, "status": "ordered", "source": "search", "ordered_at": "2026-07-31", "eta": null, "notes": "order 7213KWCD" },
+    { "id": "li3", "description": "Pololu D36V50F5 5V 5.5A step-down regulator", "part_number": "D36V50F5", "vendor": "Amazon", "product_url": null, "qty": 2, "unit_price": 24.95, "status": "researching", "source": "search", "ordered_at": null, "eta": null, "notes": "from S4 search; reverse-protection verified via Pololu page" },
+    { "id": "li4", "description": "JST-XH connector kit, 2/3/4-pin, 200pc", "part_number": "455-2261-ND", "vendor": "Digi-Key", "product_url": null, "qty": 1, "unit_price": 16.8, "status": "ordered", "source": "manual", "ordered_at": "2026-07-31", "eta": null, "notes": "order 83605521" },
+    { "id": "li5", "description": "Adafruit half-size breadboard, 3-pack", "part_number": "64", "vendor": "Adafruit", "product_url": null, "qty": 1, "unit_price": 14.85, "status": "ordered", "source": "manual", "ordered_at": "2026-07-20", "eta": "2026-07-24", "notes": "no email ever received — stale-order test case" }
+  ],
+  "order_events": [],
+  "last_email_sync": "2026-07-31T00:00:00Z"
+}
