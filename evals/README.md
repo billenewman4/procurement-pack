@@ -18,7 +18,9 @@ levels in the system, needs correct max-current handling, specific connector
 type and count, directionality matters (his actual one exploded), wants
 reverse-current protection tier vs bare-bones.
 **Pass:** skill asks for voltage/current/connector/protection before
-recommending; spec-check table marks anything unverified; no invented links.
+recommending; every recommended part cites the datasheet it read (link) or is
+capped at `? unverified` with a risk note; spec-check table marks anything
+unverified; no invented links.
 **Upgrade when Clark sends his real chat transcript: replay it verbatim.**
 
 ### S2 — Harry's fish-pier connector

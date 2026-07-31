@@ -50,11 +50,27 @@ system-level question, not a spec.
 4. **Manufacturer direct / niche vendors** — only when the above fail; flag
    unfamiliar vendors as unverified
 
-Verify against the datasheet or listing details — not the title — that every
-stated spec is met. If a spec can't be confirmed from the listing, say so.
-Vendor sites often block direct page fetches (bot walls): when that happens,
-take price/lead time from the search-result snippet, and mark any value you
-couldn't see as `?` — never guess or reconstruct it.
+## Step 3.5 — Verify against the DATASHEET, not the listing
+
+This is the core of the skill. Retail listings are marketing; the datasheet is
+the contract. For every candidate part:
+
+1. Identify the **manufacturer part number (MPN)** from the listing.
+2. Find the actual datasheet — manufacturer site, or the datasheet PDF links on
+   Digi-Key/Mouser (direct PDFs usually fetch fine even when store pages are
+   bot-walled).
+3. Check each user spec against the datasheet — including the failure-mode
+   specs nobody lists in titles: polarity/reverse-current protection, max
+   ratings vs continuous ratings, connector pinout, derating.
+4. A part with **no findable MPN or datasheet** (typical for generic
+   marketplace clones) is capped at `? unverified` with an explicit risk note —
+   this is the exploded-board class of part. It may still be the right cheap
+   choice for prototyping, but the user decides that knowingly.
+
+Price and lead time matter, but spec correctness is the product: a cheap wrong
+part costs a build week. When bot walls block a store page, take price/lead
+time from the search snippet and mark what you couldn't see as `?` — never
+guess or reconstruct a number.
 
 ## Step 4 — Output contract
 
@@ -62,12 +78,13 @@ Every recommendation MUST contain, per option (2–4 options):
 
 | field | |
 |---|---|
-| Part + part number | exact, quoted from listing |
+| Part + MPN | exact, quoted from listing/datasheet |
 | Vendor + direct link | real URL you found, never constructed |
-| Price + quantity | as listed |
+| Datasheet | link to the PDF you actually read, or "none found" |
+| Price + quantity | as listed (`?` if bot-walled) |
 | Lead time | as listed |
-| Spec check | each user spec: ✓ confirmed / ? unverified / ✗ miss |
-| Risk notes | unfamiliar vendor, ambiguous listing, spec gaps |
+| Spec check | each user spec: ✓ datasheet / ✓ listing-only / ? unverified / ✗ miss |
+| Risk notes | no datasheet, unfamiliar vendor, ambiguous listing, spec gaps |
 
 End with: **"Want me to add one of these to the BOM?"** — on yes, write the
 `line_items` record (status `researching` or `ordered`) to the store (MCP if
@@ -75,6 +92,9 @@ connected, else the local `bom.json`).
 
 ## Common mistakes
 
+- Verifying against the retail listing when a datasheet exists — the listing
+  is marketing copy; the datasheet is the contract. `✓ listing-only` is a
+  weaker claim and must be labeled as such.
 - Recommending from the listing *title* instead of its spec table → wrong-spec
   parts. Read the details.
 - Guessing an unstated spec instead of asking → the exploded-converter failure.
