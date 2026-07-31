@@ -11,26 +11,36 @@ Read-only sweep of the user's Gmail for vendor order emails; emit structured
 order events; reconcile against the BOM. The documented pain this solves:
 "keeping track of what you have versus have not ordered so nothing is missed."
 
-**Privacy contract:** search only with vendor/order-scoped queries; never
-summarize, quote, or reference any email outside the matched set. Store only
-the one-line `raw_summary` per event — never full bodies.
+**Privacy contract:** classification may surface non-order emails as
+candidates — read no more than sender/subject/snippet before discarding them,
+and never store, summarize, quote, or reference any email outside classified
+order events. Store only the one-line `raw_summary` per event — never full
+bodies. Vendors the user has excluded are hard negative filters (`-from:...`)
+on every query — never retrieved, never mentioned.
 
-## Step 1 — Scoped search
+## Step 1 — Find order emails: retrieve broadly, classify precisely
 
-Resolve the store first: (1) Postgres MCP if connected, (2) local store at
-`~/.procurement-pack/<project-slug>/bom.json` (spec: store/README.md in the
-pack repo). Window: since last sync (`last_email_sync` in the local store, or
-`max(order_events.event_at)` in SQL), default 7 days. Query the Gmail connector
-with vendor-scoped searches, e.g.:
+Do NOT rely on hardcoded sender lists or subject keywords — vendor senders and
+wording vary too much to enumerate. Resolve the store first: (1) Postgres MCP
+if connected, (2) local store at `~/.procurement-pack/<project-slug>/bom.json`
+(spec: store/README.md). Window: since last sync (`last_email_sync`, or
+`max(order_events.event_at)` in SQL), default 7 days.
 
-```
-from:(mcmaster.com OR digikey.com OR amazon.com OR mouser.com) newer_than:7d
-subject:(order OR shipped OR delivered OR confirmation OR backorder) newer_than:7d
-```
-
-Vendor allowlist comes from distinct `line_items.vendor` values in the DB plus
-a default list (McMaster, Digi-Key, Amazon, Mouser). If the user has excluded
-any vendor from tracking, never query or mention it.
+1. **Retrieve candidates** (high recall, cheap fields only):
+   - `category:purchases newer_than:<window>` — Gmail's own purchase
+     classifier is the best single source; start here.
+   - Targeted sweeps for vendors already known to the store: domains from
+     `line_items.vendor` and prior `order_events` senders.
+   - If the two above return nothing, one broad sweep of the window
+     (`newer_than:<window>`) reading ONLY sender/subject/snippet.
+2. **Classify each candidate yourself** from sender/subject/snippet: is this a
+   lifecycle event (confirmation, shipment, delivery, backorder, problem) for
+   a purchase of physical goods plausibly related to a tracked project? SaaS
+   receipts, subscriptions, and marketing are not. Fetch the full body
+   (`plaintextBody` only — never HTML) ONLY for emails classified as order
+   events; discard everything else immediately.
+3. **Learn vendors:** when the user confirms an order event from a new vendor,
+   record its sender domain in the store so future runs can query it directly.
 
 ## Step 2 — Extract structured events
 

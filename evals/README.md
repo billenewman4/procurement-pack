@@ -37,6 +37,16 @@ options with real links and prices. The skill must not make easy things slow.
 
 ## Gmail scenarios
 
+### Retrieval-eval integrity rule
+
+The fixture emails in `fixtures/test-emails.md` were written by the same
+author as the skill, so they CANNOT be used to grade **retrieval** (Step 1) —
+authored fixtures always match the author's queries. They remain valid for
+grading **parsing and reconciliation** (Steps 2-3): inject them past retrieval
+by ID. Retrieval must be graded only on emails we didn't write: real vendor
+order emails (the dogfood Arduino orders) in a real inbox, mixed with the
+inbox's natural noise.
+
 ### G1 — Your own inbox
 Run against real McMaster/Amazon/Digi-Key order emails in your Gmail.
 **Pass:** every event's order number/price is verbatim from the email; scoped
