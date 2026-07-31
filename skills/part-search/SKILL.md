@@ -35,7 +35,11 @@ Only ask what the context didn't answer. Cover whichever apply:
 - **Quantity and lead-time priority** — for prototypers, lead time usually
   beats price.
 
-One round of questions, then search. Don't interrogate.
+One round of questions, then search. Don't interrogate. Fold the Step 1
+setup request (when no store exists) and these questions into a single message.
+If the right solution might be a different *kind* of part than the user asked
+for (e.g. a transformer rather than an adapter), say so and ask — that's a
+system-level question, not a spec.
 
 ## Step 3 — Search, in this order
 
@@ -48,6 +52,9 @@ One round of questions, then search. Don't interrogate.
 
 Verify against the datasheet or listing details — not the title — that every
 stated spec is met. If a spec can't be confirmed from the listing, say so.
+Vendor sites often block direct page fetches (bot walls): when that happens,
+take price/lead time from the search-result snippet, and mark any value you
+couldn't see as `?` — never guess or reconstruct it.
 
 ## Step 4 — Output contract
 
