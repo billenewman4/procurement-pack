@@ -58,7 +58,10 @@ the contract. For every candidate part:
 1. Identify the **manufacturer part number (MPN)** from the listing.
 2. Find the actual datasheet — manufacturer site, or the datasheet PDF links on
    Digi-Key/Mouser (direct PDFs usually fetch fine even when store pages are
-   bot-walled).
+   bot-walled). Fetch tools often can't parse PDFs inline: download the PDF to
+   a temp file and read it from disk. If the part has no PDF, the
+   manufacturer's own product page is the next-best spec source — label
+   verification `✓ listing-only` in that case.
 3. Check each user spec against the datasheet — including the failure-mode
    specs nobody lists in titles: polarity/reverse-current protection, max
    ratings vs continuous ratings, connector pinout, derating.
