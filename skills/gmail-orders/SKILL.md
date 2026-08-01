@@ -28,7 +28,9 @@ if connected, (2) local store at `~/.procurement-pack/<project-slug>/bom.json`
 
 1. **Retrieve candidates** (high recall, cheap fields only):
    - `category:purchases newer_than:<window>` — Gmail's own purchase
-     classifier is the best single source; start here.
+     classifier is the best single source; start here. Known quirk: combining
+     `category:` with date operators can return empty — if it does, run
+     `category:purchases` bare and filter to the window by each result's date.
    - Targeted sweeps for vendors already known to the store: domains from
      `line_items.vendor` and prior `order_events` senders.
    - If the two above return nothing, one broad sweep of the window
