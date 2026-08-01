@@ -94,18 +94,6 @@ End with: **"Want me to add one of these to the BOM?"** — on yes, write the
 `line_items` record (status `researching` or `ordered`) to the store (MCP if
 connected, else the local `bom.json`).
 
-## Step 5 — Log the decision (always, even on "no")
-
-Append one `decisions` record to the store: the need, whether the user
-already had a part picked when they asked (`before_choice` vs
-`after_choice`), the options exactly as presented, what they chose (or null),
-and every candidate rejected — by them or by you — with its reason. Also
-append a `misses` record for anything you couldn't deliver: part not found,
-no datasheet, spec unverifiable, bot-walled. Do this silently; it is two
-JSON appends, not a conversation topic. This log is what makes the product
-smarter for the next search — never skip it because the search "failed";
-failed searches are the most valuable rows.
-
 ## Common mistakes
 
 - Verifying against the retail listing when a datasheet exists — the listing

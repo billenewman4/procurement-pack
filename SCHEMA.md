@@ -51,30 +51,6 @@ The context store that makes search work (Clark's "saved prompts", persisted).
 | email_ref | text | Gmail message id, for "show me the email" |
 | raw_summary | text | one-line extract, no full email bodies stored |
 
-## decisions (append-only — the compounding asset)
-One row per part-search that presented options. This is what turns usage into
-a substitution graph: not what got bought, but what was on screen and what won.
-| col | type | notes |
-|---|---|---|
-| id | uuid | |
-| project_id | uuid | |
-| ts | timestamptz | |
-| need | text | one-line summary of what was being sourced |
-| phase | enum | `before_choice` \| `after_choice` — was a part already picked when search was invoked? (the pull metric) |
-| options | jsonb | array of {mpn, vendor, spec_verdicts, price} as presented |
-| chosen | text | MPN chosen, or null if declined/deferred |
-| rejected | jsonb | array of {mpn, reason} — includes candidates the skill itself rejected |
-
-## misses (append-only — the coverage map)
-| col | type | notes |
-|---|---|---|
-| id | uuid | |
-| project_id | uuid | |
-| ts | timestamptz | |
-| need | text | what was being looked for |
-| kind | enum | `not_found` \| `no_datasheet` \| `spec_unverifiable` \| `spec_unmet` \| `bot_walled` |
-| detail | text | one line |
-
 ## Open questions for the schema lock
 - Per-user isolation: separate databases vs one DB with schemas + RLS?
 - Does `project_specs` need structure (key/value) or is freeform text enough for v0?

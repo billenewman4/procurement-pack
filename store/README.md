@@ -26,8 +26,6 @@ local store now; nothing about the skills changes when the MCP lands.
       "qty": 2, "unit_price": 11.99, "status": "ordered", "source": "search",
       "ordered_at": "2026-07-31", "eta": "2026-08-02", "notes": null }
   ],
-  "decisions": [],
-  "misses": [],
   "order_events": [
     { "id": "oe1", "line_item_id": "li1", "vendor": "Amazon",
       "order_number": "112-4477", "event": "confirmed",
