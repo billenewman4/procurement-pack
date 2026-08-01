@@ -22,8 +22,10 @@ on every query — never retrieved, never mentioned.
 
 Do NOT rely on hardcoded sender lists or subject keywords — vendor senders and
 wording vary too much to enumerate. Resolve the store first: (1) Postgres MCP
-if connected, (2) local store at `~/.procurement-pack/<project-slug>/bom.json`
-(spec: store/README.md). Window: since last sync (`last_email_sync`, or
+if connected, (2) local store at `~/.procurement-pack/<project-slug>/bom.json`,
+or `./bom.json` in the current workspace folder when the home path isn't
+accessible (e.g. Cowork) — spec: store/README.md. Window: since last sync
+(`last_email_sync`, or
 `max(order_events.event_at)` in SQL), default 7 days.
 
 1. **Retrieve candidates** (high recall, cheap fields only):

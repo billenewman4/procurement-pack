@@ -17,9 +17,10 @@ explodes). Context first, search second.
 
 Load `project_specs` and the current BOM (`line_items`) from the store, resolved
 in order: (1) Postgres MCP if connected, (2) local store at
-`~/.procurement-pack/<project-slug>/bom.json` (spec: store/README.md in the
-pack repo), (3) neither → ask the user for their setup description and warn
-that nothing will persist.
+`~/.procurement-pack/<project-slug>/bom.json`, or `./bom.json` in the current
+workspace folder when the home path isn't accessible (e.g. Cowork) — spec:
+store/README.md in the pack repo, (3) neither → ask the user for their setup
+description and warn that nothing will persist.
 
 ## Step 2 — Ask the right questions BEFORE searching
 
