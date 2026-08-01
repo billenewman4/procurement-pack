@@ -7,10 +7,15 @@ failure branch and keep going — never abandon setup silently.
 
 ## Step 0 — Detect your surface
 
-- **Claude Code** (you have a shell, git, and access to `~`): follow path A
-  in each step.
-- **Cowork / claude.ai** (you have a granted workspace folder, no home dir):
-  follow path B.
+- **Claude Code, persistent machine** (shell, git, and a `~` that survives
+  the session): follow path A in each step.
+- **Cowork / claude.ai** (granted workspace folder, no home dir): path B.
+- **Ephemeral cloud session** (you have a shell but the home dir dies with
+  the session): path C — use the workspace store like path B, and instead of
+  symlinking, package each skill directory as a `.skill` file and present it
+  for the user to **Save skill** to their Claude account. Account-saved
+  skills auto-trigger in future sessions — this is the durable install on
+  this surface. Tell the user to click Save on each card.
 
 ## Step 1 — Get the pack
 
