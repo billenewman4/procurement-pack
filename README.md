@@ -3,6 +3,13 @@
 Claude extension pack for hardware procurement: context-aware part search, BOM/order
 tracking in a shared Postgres, and Gmail-driven order status updates.
 
+## Install (paste this into Claude Code or Cowork)
+
+> Fetch https://raw.githubusercontent.com/billenewman4/procurement-pack/main/INSTALL_FOR_AGENTS.md
+> and follow it to set up the procurement pack for me.
+
+That's the entire setup — your Claude does the rest (~5 minutes, two questions).
+
 ## Architecture
 
 ```
