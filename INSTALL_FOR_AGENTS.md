@@ -42,8 +42,11 @@ uploaded claude.ai Skills later makes them auto-trigger.
 [ASK] "What should we call your first project?" (one short name, e.g.
 "robot-v1").
 
-Create the store — path per surface (A: `~/.procurement-pack/<slug>/bom.json`,
-B: `./bom.json` in the workspace):
+Always create a **brand-new, empty** store for the user. Never copy, seed
+from, or reuse any `bom.json` you find in the pack repo — `evals/fixtures/`
+contains fake test data for grading the skills, not user data. Path per
+surface (A: `~/.procurement-pack/<slug>/bom.json`, B: `./bom.json` in the
+workspace):
 
 ```json
 {
