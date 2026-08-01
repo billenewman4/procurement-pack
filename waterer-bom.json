@@ -1,0 +1,13 @@
+{
+  "project": { "id": "p1", "name": "balcony-plant-waterer", "created_at": "2026-07-31" },
+  "specs": [
+    { "id": "s1", "category": "system", "spec": "Arduino reads soil moisture sensor; drives small water pump when soil is dry; outdoor balcony install", "updated_at": "2026-07-31" },
+    { "id": "s2", "category": "inventory", "spec": "User owns no parts yet - full BOM needed including controller, breadboard, jumpers, power", "updated_at": "2026-07-31" },
+    { "id": "s3", "category": "power", "spec": "Mains outlet available at balcony; 5V USB supply acceptable for controller", "updated_at": "2026-07-31" },
+    { "id": "s4", "category": "scale", "spec": "1 pot, 1 sensor, 1 pump; reservoir bucket + tubing", "updated_at": "2026-07-31" },
+    { "id": "s5", "category": "tier", "spec": "Cheap prototype tier - Amazon-class parts, fast shipping, ~$25-50 budget; unverified generics acceptable with risk notes", "updated_at": "2026-07-31" }
+  ],
+  "line_items": [],
+  "order_events": [],
+  "last_email_sync": null
+}
