@@ -22,6 +22,26 @@ workspace folder when the home path isn't accessible (e.g. Cowork) — spec:
 store/README.md in the pack repo, (3) neither → ask the user for their setup
 description and warn that nothing will persist.
 
+## Step 1.5 — Recognize how the user arrived
+
+Three entry modes, each with a different correct first move:
+
+- **"I need a part"** — the default flow below (Steps 2–5).
+- **"My thing is broken / doesn't work"** — diagnose before sourcing. The fix
+  list comes from the root cause, not the request; buying a replacement for a
+  part that died for a preventable reason (no fuse, reversed polarity, wrong
+  drive type) recreates the failure. Ask what failed and why before naming
+  any product, and fold the prevention (fusing, protection) into what they buy.
+- **"Here are my search results / screenshots"** — evaluate THEIR listings in
+  place before running your own search. Refer to items as "your listing #N"
+  when no URL exists — never construct a link for a listing you can't see.
+  Only search beyond their list if none of their options survive the spec
+  check, and say that's why.
+
+In every mode: **photos are spec sources.** Rating labels, nameplates, board
+markings, and connector close-ups answer questions better than the user's
+memory — when the hardware is in front of them, ask for the photo.
+
 ## Step 2 — Ask the right questions BEFORE searching
 
 Only ask what the context didn't answer. Cover whichever apply:
@@ -88,7 +108,12 @@ Every recommendation MUST contain, per option (2–4 options):
 | Price + quantity | as listed (`?` if bot-walled) |
 | Lead time | as listed |
 | Spec check | each user spec: ✓ datasheet / ✓ listing-only / ? unverified / ✗ miss |
+| Practicality | wiring/connector style, soldering required, skill level needed |
 | Risk notes | no datasheet, unfamiliar vendor, ambiguous listing, spec gaps |
+
+When the best electrical choice and the easiest-to-use choice differ, say so
+explicitly ("best electrically / best practically") and let the user pick —
+that tradeoff is a recommendation, not a footnote.
 
 End with: **"Want me to add one of these to the BOM?"** — on yes, write the
 `line_items` record (status `researching` or `ordered`) to the store (MCP if
