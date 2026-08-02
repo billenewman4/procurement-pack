@@ -1,0 +1,63 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { PGlite } from '@electric-sql/pglite';
+
+const SCHEMA = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), 'schema.sql'),
+  'utf8',
+);
+
+export interface Engine {
+  query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>;
+  initSchema(): Promise<void>;
+  close(): Promise<void>;
+}
+
+function pgliteEngine(db: PGlite): Engine {
+  return {
+    async query(sql, params = []) {
+      const res = await db.query(sql, params as unknown[]);
+      return res.rows as never[];
+    },
+    async initSchema() {
+      await db.exec(SCHEMA);
+    },
+    async close() {
+      await db.close();
+    },
+  };
+}
+
+/**
+ * DATABASE_URL always wins. Otherwise PGLite in BOMDB_DATA_DIR
+ * (default ~/.bomdb/data) — a real Postgres, no server.
+ */
+export async function createEngine(): Promise<Engine> {
+  const url = process.env.DATABASE_URL;
+  if (url) {
+    const postgres = (await import('postgres')).default;
+    const sql = postgres(url, { onnotice: () => {} });
+    return {
+      async query(q, params = []) {
+        return (await sql.unsafe(q, params as never[])) as never[];
+      },
+      async initSchema() {
+        await sql.unsafe(SCHEMA).simple();
+      },
+      async close() {
+        await sql.end();
+      },
+    };
+  }
+  const dataDir =
+    process.env.BOMDB_DATA_DIR ?? join(process.env.HOME ?? '.', '.bomdb', 'data');
+  return pgliteEngine(new PGlite(dataDir));
+}
+
+/** In-memory PGLite with schema applied — for tests only. */
+export async function createTestEngine(): Promise<Engine> {
+  const engine = pgliteEngine(new PGlite());
+  await engine.initSchema();
+  return engine;
+}

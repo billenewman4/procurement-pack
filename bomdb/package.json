@@ -5,7 +5,7 @@
   "type": "module",
   "description": "MCP server for the procurement-pack BOM store (PGLite local / Postgres hosted)",
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test 'test/**/*.test.ts'",
     "start": "node src/server.ts"
   },
   "dependencies": {
