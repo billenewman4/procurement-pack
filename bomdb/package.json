@@ -4,13 +4,21 @@
   "private": true,
   "type": "module",
   "description": "MCP server for the procurement-pack BOM store (PGLite local / Postgres hosted)",
+  "engines": {
+    "node": ">=23.6"
+  },
   "scripts": {
     "test": "node --test 'test/**/*.test.ts'",
+    "typecheck": "tsc",
     "start": "node src/server.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.2.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "postgres": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "^7.0.2"
   }
 }

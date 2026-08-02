@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PGlite } from '@electric-sql/pglite';
@@ -16,9 +17,9 @@ export interface Engine {
 
 function pgliteEngine(db: PGlite): Engine {
   return {
-    async query(sql, params = []) {
-      const res = await db.query(sql, params as unknown[]);
-      return res.rows as never[];
+    async query<T>(sql: string, params: unknown[] = []) {
+      const res = await db.query(sql, params);
+      return res.rows as T[];
     },
     async initSchema() {
       await db.exec(SCHEMA);
@@ -39,8 +40,10 @@ export async function createEngine(): Promise<Engine> {
     const postgres = (await import('postgres')).default;
     const sql = postgres(url, { onnotice: () => {} });
     return {
-      async query(q, params = []) {
-        return (await sql.unsafe(q, params as never[])) as never[];
+      async query<T>(q: string, params: unknown[] = []) {
+        // postgres.js types unsafe() params as its own ParameterOrJSON[]; our
+        // unknown[] is what actually flows through, so narrow with a cast.
+        return (await sql.unsafe(q, params as never[])) as T[];
       },
       async initSchema() {
         await sql.unsafe(SCHEMA).simple();
@@ -51,7 +54,7 @@ export async function createEngine(): Promise<Engine> {
     };
   }
   const dataDir =
-    process.env.BOMDB_DATA_DIR ?? join(process.env.HOME ?? '.', '.bomdb', 'data');
+    process.env.BOMDB_DATA_DIR ?? join(homedir(), '.bomdb', 'data');
   return pgliteEngine(new PGlite(dataDir));
 }
 
