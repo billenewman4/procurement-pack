@@ -11,7 +11,9 @@ const BOM_JSON = {
   line_items: [
     { id: 'li1', description: 'step-down converter 12V→5V 3A', part_number: null,
       vendor: 'Amazon', product_url: null, qty: 2, unit_price: 11.99, status: 'ordered',
-      source: 'search', ordered_at: '2026-07-31', eta: '2026-08-02', notes: null },
+      source: 'search', ordered_at: '2026-07-31', eta: '2026-08-02', notes: null,
+      chosen_because: '12V rail, 400mA < 3A budget', outcome: 'worked',
+      outcome_notes: 'browned out under pump inrush until cap added' },
   ],
   order_events: [
     { id: 'oe1', line_item_id: 'li1', vendor: 'Amazon', order_number: '112-4477',
@@ -30,6 +32,10 @@ test('import_json → export_json round-trips Bill\'s bom.json shape', async () 
   assert.equal(out.specs.length, 1);
   assert.equal(out.line_items.length, 1);
   assert.equal(out.line_items[0].unit_price, 11.99);
+  // provenance fields survive the round trip
+  assert.equal(out.line_items[0].chosen_because, '12V rail, 400mA < 3A budget');
+  assert.equal(out.line_items[0].outcome, 'worked');
+  assert.equal(out.line_items[0].outcome_notes, 'browned out under pump inrush until cap added');
   assert.equal(out.order_events.length, 1);
   // the link survived the id remap
   assert.equal(out.order_events[0].line_item_id, out.line_items[0].id);

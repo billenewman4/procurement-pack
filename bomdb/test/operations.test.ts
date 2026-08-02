@@ -139,3 +139,21 @@ test('stale_orders finds ordered items with no recent event', async () => {
   assert.equal(stale.length, 1);
   assert.equal(stale[0].description, 'old order');
 });
+
+test('record_order_event cannot advance a line item in another project', async () => {
+  const pA = await runOp(engine, 'create_project', { name: 'xproj-a' }) as { id: string };
+  const pB = await runOp(engine, 'create_project', { name: 'xproj-b' }) as { id: string };
+  const li = await runOp(engine, 'upsert_line_item', {
+    project_id: pA.id, description: 'solenoid valve', status: 'ordered',
+  }) as { id: string };
+  const ev = await runOp(engine, 'record_order_event', {
+    project_id: pB.id, line_item_id: li.id, vendor: 'Amazon',
+    event: 'shipped', event_at: '2026-08-02T14:00:00Z', raw_summary: 'shipped',
+  }) as { line_item_id: string | null; line_item_status: string | null; flag?: string };
+  // event kept, but unlinked — and flagged for manual reconciliation
+  assert.equal(ev.line_item_id, null);
+  assert.ok(ev.flag, 'cross-project mismatch should be flagged');
+  // the other project's item is untouched
+  const ctx = await runOp(engine, 'get_project_context', { project_id: pA.id }) as { line_items: { id: string; status: string }[] };
+  assert.equal(ctx.line_items.find(r => r.id === li.id)!.status, 'ordered');
+});

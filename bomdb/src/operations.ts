@@ -164,28 +164,37 @@ export const operations: Operation[] = [
       raw_summary: { type: 'string', description: 'One line. Never full bodies.', required: true },
     },
     handler: async (engine, p) => {
+      let line_item_status: string | null = null;
+      let flag: string | undefined;
+      // Match the line item within the given project only — a valid id from
+      // another project must never be advanced (or linked) from here.
+      let matched: { status: string } | undefined;
+      let lineItemId: unknown = p.line_item_id ?? null;
+      if (p.line_item_id) {
+        [matched] = await engine.query<{ status: string }>(
+          `SELECT status FROM line_items WHERE id = $1 AND project_id = $2`,
+          [p.line_item_id, p.project_id]);
+        if (!matched) {
+          lineItemId = null;
+          flag = `line item ${p.line_item_id} not found in project ${p.project_id} — event stored unmatched for manual reconciliation`;
+        }
+      }
       const [ev] = await engine.query(
         `INSERT INTO order_events (line_item_id, project_id, vendor, order_number, event, event_at, tracking_url, email_ref, raw_summary)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-        [p.line_item_id ?? null, p.project_id, p.vendor, p.order_number ?? null,
+        [lineItemId, p.project_id, p.vendor, p.order_number ?? null,
          p.event, p.event_at, p.tracking_url ?? null, p.email_ref ?? null, p.raw_summary]);
-      let line_item_status: string | null = null;
-      let flag: string | undefined;
-      if (p.line_item_id) {
-        const [li] = await engine.query<{ status: string }>(
-          `SELECT status FROM line_items WHERE id = $1`, [p.line_item_id]);
-        if (li) {
-          const implied = eventToStatus(p.event as string);
-          if (implied && isForwardMove(li.status, implied)) {
-            const [updated] = await engine.query<{ status: string }>(
-              `UPDATE line_items SET status = $2 WHERE id = $1 RETURNING status`,
-              [p.line_item_id, implied]);
-            line_item_status = updated.status;
-          } else {
-            line_item_status = li.status;
-            if (implied !== li.status) {
-              flag = `event "${p.event}" does not forward-advance item in status "${li.status}" — surface to the user`;
-            }
+      if (matched) {
+        const implied = eventToStatus(p.event as string);
+        if (implied && isForwardMove(matched.status, implied)) {
+          const [updated] = await engine.query<{ status: string }>(
+            `UPDATE line_items SET status = $2 WHERE id = $1 AND project_id = $3 RETURNING status`,
+            [p.line_item_id, implied, p.project_id]);
+          line_item_status = updated.status;
+        } else {
+          line_item_status = matched.status;
+          if (implied !== matched.status) {
+            flag = `event "${p.event}" does not forward-advance item in status "${matched.status}" — surface to the user`;
           }
         }
       }
@@ -205,6 +214,7 @@ export const operations: Operation[] = [
        FROM line_items li JOIN projects p ON p.id = li.project_id
        WHERE li.status = 'ordered'
          AND ($1::uuid IS NULL OR li.project_id = $1)
+         -- sentinel: no events and no ordered_at means we know nothing recent — always stale
          AND COALESCE(
                (SELECT max(oe.event_at) FROM order_events oe WHERE oe.line_item_id = li.id),
                li.ordered_at, now() - interval '100 years')
@@ -256,12 +266,13 @@ export const operations: Operation[] = [
       const idMap = new Map<string, string>();
       for (const li of bom.line_items ?? []) {
         const [row] = await engine.query<{ id: string }>(
-          `INSERT INTO line_items (project_id, description, part_number, vendor, product_url, qty, unit_price, status, source, ordered_at, eta, notes)
-           VALUES ($1,$2,$3,$4,$5,COALESCE($6,1),$7,COALESCE($8,'needed'),COALESCE($9,'manual'),$10,$11,$12) RETURNING id`,
+          `INSERT INTO line_items (project_id, description, part_number, vendor, product_url, qty, unit_price, status, source, ordered_at, eta, notes, chosen_because, outcome, outcome_notes)
+           VALUES ($1,$2,$3,$4,$5,COALESCE($6,1),$7,COALESCE($8,'needed'),COALESCE($9,'manual'),$10,$11,$12,$13,$14,$15) RETURNING id`,
           [project.id, li.description, li.part_number ?? null, li.vendor ?? null,
            li.product_url ?? null, li.qty ?? null, li.unit_price ?? null,
            li.status ?? null, li.source ?? null, li.ordered_at ?? null,
-           li.eta ?? null, li.notes ?? null]);
+           li.eta ?? null, li.notes ?? null, li.chosen_because ?? null,
+           li.outcome ?? null, li.outcome_notes ?? null]);
         if (typeof li.id === 'string') idMap.set(li.id, row.id);
       }
       for (const oe of bom.order_events ?? []) {
