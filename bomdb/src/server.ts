@@ -1,12 +1,12 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { createEngine } from './engine.ts';
+import { createEngine, ensureSchema } from './engine.ts';
 import { operations, runOp } from './operations.ts';
 import { buildToolDefs } from './tool-defs.ts';
 
 const engine = await createEngine();
-await engine.initSchema();
+await ensureSchema(engine);
 
 const server = new Server(
   { name: 'bomdb', version: '0.1.0' },

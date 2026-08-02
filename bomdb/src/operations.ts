@@ -22,8 +22,12 @@ export const operations: Operation[] = [
     description: 'Create a new hardware project. Returns the project row.',
     params: { name: { type: 'string', description: 'Project name, e.g. "plant-waterer-v1"', required: true } },
     handler: async (engine, p) => {
+      // user_id resolves to the connected scoped role's app user (hosted
+      // multi-user mode) or null for the owner/local connection.
       const rows = await engine.query(
-        `INSERT INTO projects (name) VALUES ($1) RETURNING *`, [p.name]);
+        `INSERT INTO projects (name, user_id)
+         VALUES ($1, (SELECT id FROM users WHERE pg_role = current_user))
+         RETURNING *`, [p.name]);
       return rows[0];
     },
   },

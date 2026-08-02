@@ -70,6 +70,25 @@ export async function createEngine(): Promise<Engine> {
   return pgliteEngine(new PGlite(dataDir));
 }
 
+/**
+ * Startup schema init that works for BOTH connection kinds: the owner/local
+ * connection applies the schema (idempotent DDL); a scoped hosted user has no
+ * DDL permission, so the attempt fails — that's fine as long as the schema
+ * already exists (the admin manages it). Probe before swallowing the error so
+ * a genuinely broken connection still fails loudly.
+ */
+export async function ensureSchema(engine: Engine): Promise<void> {
+  try {
+    await engine.initSchema();
+  } catch (err) {
+    try {
+      await engine.query('SELECT 1 FROM projects LIMIT 0');
+    } catch {
+      throw err;
+    }
+  }
+}
+
 /** In-memory PGLite with schema applied — for tests only. */
 export async function createTestEngine(): Promise<Engine> {
   const engine = pgliteEngine(new PGlite());
