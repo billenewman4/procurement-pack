@@ -1,0 +1,16 @@
+{
+  "name": "bomdb",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server for the procurement-pack BOM store (PGLite local / Postgres hosted)",
+  "scripts": {
+    "test": "node --test test/",
+    "start": "node src/server.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.2.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "postgres": "^3.4.0"
+  }
+}
