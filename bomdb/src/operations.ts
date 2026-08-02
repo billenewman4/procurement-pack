@@ -212,7 +212,83 @@ export const operations: Operation[] = [
        ORDER BY li.ordered_at`,
       [p.project_id ?? null, p.days ?? null]),
   },
+  {
+    name: 'export_json',
+    description: 'Export a project in the bom.json interchange shape (store/README.md). last_email_sync is derived from max(order_events.event_at).',
+    params: { project_id: { type: 'string', required: true } },
+    handler: async (engine, p) => {
+      const [project] = await engine.query(`SELECT * FROM projects WHERE id = $1`, [p.project_id]);
+      if (!project) return { error: `project ${p.project_id} not found` };
+      const specs = await engine.query(`SELECT * FROM project_specs WHERE project_id = $1 ORDER BY category`, [p.project_id]);
+      const line_items = await engine.query(`SELECT * FROM line_items WHERE project_id = $1`, [p.project_id]);
+      const order_events = await engine.query(`SELECT * FROM order_events WHERE project_id = $1 ORDER BY event_at`, [p.project_id]);
+      const [sync] = await engine.query<{ max: unknown }>(
+        `SELECT max(event_at) AS max FROM order_events WHERE project_id = $1`, [p.project_id]);
+      const last = sync?.max;
+      return {
+        project: jsonRow(project),
+        specs: specs.map(r => jsonRow(r)),
+        line_items: line_items.map(r => jsonRow(r, ['unit_price'])),
+        order_events: order_events.map(r => jsonRow(r)),
+        last_email_sync: last instanceof Date ? last.toISOString() : last ?? null,
+      };
+    },
+  },
+  {
+    name: 'import_json',
+    description: 'Import a bom.json (store/README.md shape) as a new project. Short ids are remapped to uuids; line_item↔order_event links are preserved.',
+    params: { bom: { type: 'object', description: 'Parsed bom.json contents', required: true } },
+    handler: async (engine, p) => {
+      const bom = p.bom as {
+        project: { name: string };
+        specs?: { category: string; spec: string }[];
+        line_items?: Record<string, unknown>[];
+        order_events?: Record<string, unknown>[];
+      };
+      const [project] = await engine.query<{ id: string }>(
+        `INSERT INTO projects (name) VALUES ($1) RETURNING id`, [bom.project.name]);
+      for (const s of bom.specs ?? []) {
+        await engine.query(
+          `INSERT INTO project_specs (project_id, category, spec) VALUES ($1,$2,$3)
+           ON CONFLICT (project_id, category) DO UPDATE SET spec = EXCLUDED.spec`,
+          [project.id, s.category, s.spec]);
+      }
+      const idMap = new Map<string, string>();
+      for (const li of bom.line_items ?? []) {
+        const [row] = await engine.query<{ id: string }>(
+          `INSERT INTO line_items (project_id, description, part_number, vendor, product_url, qty, unit_price, status, source, ordered_at, eta, notes)
+           VALUES ($1,$2,$3,$4,$5,COALESCE($6,1),$7,COALESCE($8,'needed'),COALESCE($9,'manual'),$10,$11,$12) RETURNING id`,
+          [project.id, li.description, li.part_number ?? null, li.vendor ?? null,
+           li.product_url ?? null, li.qty ?? null, li.unit_price ?? null,
+           li.status ?? null, li.source ?? null, li.ordered_at ?? null,
+           li.eta ?? null, li.notes ?? null]);
+        if (typeof li.id === 'string') idMap.set(li.id, row.id);
+      }
+      for (const oe of bom.order_events ?? []) {
+        await engine.query(
+          `INSERT INTO order_events (line_item_id, project_id, vendor, order_number, event, event_at, tracking_url, email_ref, raw_summary)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+          [typeof oe.line_item_id === 'string' ? idMap.get(oe.line_item_id) ?? null : null,
+           project.id, oe.vendor, oe.order_number ?? null, oe.event, oe.event_at,
+           oe.tracking_url ?? null, oe.email_ref ?? null, oe.raw_summary ?? null]);
+      }
+      return { project_id: project.id, line_items_imported: (bom.line_items ?? []).length };
+    },
+  },
 ];
+
+/** Make a DB row clean JSON for MCP output: PGLite hands back timestamptz/date
+ *  columns as Date objects and numeric columns as strings — coerce Dates to
+ *  ISO strings, and the named numeric keys to JS numbers. Used by export_json. */
+function jsonRow(row: Record<string, unknown>, numericKeys: readonly string[] = []): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (v instanceof Date) out[k] = v.toISOString();
+    else if (numericKeys.includes(k) && typeof v === 'string') out[k] = Number(v);
+    else out[k] = v;
+  }
+  return out;
+}
 
 /** Validate params against the op's declared schema; dispatch; never throw. */
 export async function runOp(
