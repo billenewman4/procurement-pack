@@ -616,17 +616,18 @@ and follow it to set up the procurement pack for me.</div>
       <td>Four draft questions resolved + provenance columns added; Bill to ack</td></tr>
     <tr><td>Evals + install doc</td><td class="done">Built (Bill)</td>
       <td>Baseline transcripts of vanilla Claude failing; INSTALL_FOR_AGENTS.md drafted</td></tr>
+    <tr><td>Smoke test: real vendor emails parseable?</td><td class="done">Passed</td>
+      <td>Wayfair / IKEA order emails on a real inbox — order #, items, prices all
+      extractable from plaintext; spot-check McMaster / Digi-Key on Bill's inbox still worthwhile</td></tr>
+    <tr><td><code>bomdb</code> MCP server</td><td class="done">Built (Eshan)</td>
+      <td>11 operations over the 5 tables, PGLite at <code>~/.bomdb/data</code>,
+      <code>DATABASE_URL</code> flips to hosted; registered with Claude Code, 26/26 tests</td></tr>
+    <tr><td>JSON export/import</td><td class="done">Built (Eshan)</td>
+      <td>Part of bomdb — round-trips Bill's exact <code>bom.json</code> shape with id remapping</td></tr>
     <tr><td>Smoke test: scheduled task → custom MCP</td><td class="todo">Next (Eshan)</td>
       <td>Decides whether daily email sync is push or session-start catch-up</td></tr>
-    <tr><td>Smoke test: real vendor emails parseable?</td><td class="todo">Next (Eshan)</td>
-      <td>McMaster / Digi-Key / Amazon confirmations on a real inbox</td></tr>
-    <tr><td><code>bomdb</code> MCP server</td><td class="todo">To build (Eshan)</td>
-      <td>gbrain's scaffolding (~450 lines) + 5 tables + ~10 operations; PGLite local,
-      <code>DATABASE_URL</code> flips to hosted</td></tr>
     <tr><td>Dashboard artifact skill</td><td class="todo">To build (Eshan)</td>
       <td>Regenerate the BOM dashboard from the store</td></tr>
-    <tr><td>JSON export/import</td><td class="todo">To build (Eshan)</td>
-      <td>Round-trips Bill's exact <code>bom.json</code> shape</td></tr>
     <tr><td>Dogfood: the Arduino build</td><td class="todo">Together</td>
       <td>Run our own project through it until it survives reality — then Clark &amp; Harry</td></tr>
   </table></div>

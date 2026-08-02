@@ -13,7 +13,8 @@ through Claude; nothing else should touch the data dir.
   before searching for parts)
 - `upsert_line_item` — create or update; status changes are refused here
 - `update_status` — forward moves (`needed → researching → ordered → shipped →
-  delivered`) are automatic; backward moves require `confirmed: true`
+  delivered`) are automatic; backward moves and any move to or from `issue`
+  require `confirmed: true`
 - `set_outcome` — worked / failed / returned, with notes
 - `record_order_event` — email-derived events; auto-advances the matched line
   item forward only, flags anomalies (backward or cross-project) instead
