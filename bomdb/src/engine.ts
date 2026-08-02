@@ -15,10 +15,20 @@ export interface Engine {
   close(): Promise<void>;
 }
 
+/**
+ * Handlers pass optional op params straight through, so omitted values arrive
+ * as undefined. postgres.js hard-rejects undefined (UNDEFINED_VALUE) while
+ * PGLite silently coerces it — normalize to null in BOTH engines so behavior
+ * stays identical across local and hosted.
+ */
+function nullifyUndefined(params: unknown[]): unknown[] {
+  return params.map(v => (v === undefined ? null : v));
+}
+
 function pgliteEngine(db: PGlite): Engine {
   return {
     async query<T>(sql: string, params: unknown[] = []) {
-      const res = await db.query(sql, params);
+      const res = await db.query(sql, nullifyUndefined(params));
       return res.rows as T[];
     },
     async initSchema() {
@@ -43,7 +53,7 @@ export async function createEngine(): Promise<Engine> {
       async query<T>(q: string, params: unknown[] = []) {
         // postgres.js types unsafe() params as its own ParameterOrJSON[]; our
         // unknown[] is what actually flows through, so narrow with a cast.
-        return (await sql.unsafe(q, params as never[])) as T[];
+        return (await sql.unsafe(q, nullifyUndefined(params) as never[])) as T[];
       },
       async initSchema() {
         await sql.unsafe(SCHEMA).simple();

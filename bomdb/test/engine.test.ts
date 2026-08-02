@@ -19,3 +19,18 @@ test('initSchema is idempotent', async () => {
   await engine.initSchema(); // second run must not throw
   await engine.close();
 });
+
+test('undefined params are normalized to null (postgres.js parity contract)', async () => {
+  const engine = await createTestEngine();
+  // Omitted optional op params reach the engine as undefined; postgres.js
+  // rejects undefined outright, so the Engine contract is: undefined ≡ null.
+  const rows = await engine.query<{ id: string; part_number: string | null }>(
+    `INSERT INTO projects (name) VALUES ($1) RETURNING id`, ['parity-test'],
+  );
+  const inserted = await engine.query<{ part_number: string | null }>(
+    `INSERT INTO line_items (project_id, description, part_number) VALUES ($1, $2, $3) RETURNING part_number`,
+    [rows[0].id, 'widget', undefined],
+  );
+  assert.equal(inserted[0].part_number, null);
+  await engine.close();
+});
