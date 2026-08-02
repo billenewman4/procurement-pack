@@ -34,3 +34,41 @@ test('missing required param returns a clean error, not a throw', async () => {
   const res = await runOp(engine, 'create_project', {}) as { error: string };
   assert.match(res.error, /name/);
 });
+
+test('upsert_line_item creates with defaults; update by id', async () => {
+  const p = await runOp(engine, 'create_project', { name: 'li-test' }) as { id: string };
+  const li = await runOp(engine, 'upsert_line_item', {
+    project_id: p.id, description: 'step-down converter 12V→5V 3A',
+    vendor: 'Amazon', qty: 2, unit_price: 11.99, source: 'search',
+    chosen_because: '12V rail, 400mA < 3A budget',
+  }) as { id: string; status: string };
+  assert.equal(li.status, 'needed');
+  const updated = await runOp(engine, 'upsert_line_item', {
+    id: li.id, project_id: p.id, description: 'step-down converter 12V→5V 3A', qty: 3,
+  }) as { qty: number };
+  assert.equal(updated.qty, 3);
+});
+
+test('update_status: forward auto, backward refused without confirm', async () => {
+  const p = await runOp(engine, 'create_project', { name: 'status-test' }) as { id: string };
+  const li = await runOp(engine, 'upsert_line_item', {
+    project_id: p.id, description: 'pump', status: 'ordered',
+  }) as { id: string };
+  const fwd = await runOp(engine, 'update_status', { line_item_id: li.id, status: 'shipped' }) as { status: string };
+  assert.equal(fwd.status, 'shipped');
+  const back = await runOp(engine, 'update_status', { line_item_id: li.id, status: 'ordered' }) as { error: string };
+  assert.match(back.error, /confirm/i);
+  const confirmed = await runOp(engine, 'update_status', {
+    line_item_id: li.id, status: 'ordered', confirmed: true,
+  }) as { status: string };
+  assert.equal(confirmed.status, 'ordered');
+});
+
+test('set_outcome records worked/failed with notes', async () => {
+  const p = await runOp(engine, 'create_project', { name: 'outcome-test' }) as { id: string };
+  const li = await runOp(engine, 'upsert_line_item', { project_id: p.id, description: 'buck converter' }) as { id: string };
+  const res = await runOp(engine, 'set_outcome', {
+    line_item_id: li.id, outcome: 'worked', outcome_notes: 'browned out under pump inrush until cap added',
+  }) as { outcome: string };
+  assert.equal(res.outcome, 'worked');
+});
