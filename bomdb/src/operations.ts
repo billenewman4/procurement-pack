@@ -234,13 +234,9 @@ export const operations: Operation[] = [
       const order_events = await engine.query(`SELECT * FROM order_events WHERE project_id = $1 ORDER BY event_at`, [p.project_id]);
       const [sync] = await engine.query<{ max: unknown }>(
         `SELECT max(event_at) AS max FROM order_events WHERE project_id = $1`, [p.project_id]);
-      const last = sync?.max;
       return {
-        project: jsonRow(project),
-        specs: specs.map(r => jsonRow(r)),
-        line_items: line_items.map(r => jsonRow(r, ['unit_price'])),
-        order_events: order_events.map(r => jsonRow(r)),
-        last_email_sync: last instanceof Date ? last.toISOString() : last ?? null,
+        project, specs, line_items, order_events,
+        last_email_sync: sync?.max ?? null,
       };
     },
   },
@@ -288,17 +284,31 @@ export const operations: Operation[] = [
   },
 ];
 
-/** Make a DB row clean JSON for MCP output: PGLite hands back timestamptz/date
- *  columns as Date objects and numeric columns as strings — coerce Dates to
- *  ISO strings, and the named numeric keys to JS numbers. Used by export_json. */
-function jsonRow(row: Record<string, unknown>, numericKeys: readonly string[] = []): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(row)) {
-    if (v instanceof Date) out[k] = v.toISOString();
-    else if (numericKeys.includes(k) && typeof v === 'string') out[k] = Number(v);
-    else out[k] = v;
+/** Columns whose driver representation isn't clean JSON. PGLite/postgres hand
+ *  back timestamptz/date columns as Date objects and numeric columns as
+ *  strings; `eta` is a SQL `date`, so it should read "2026-08-02", not a
+ *  midnight-UTC timestamp. */
+const NUMERIC_KEYS = new Set(['unit_price']);
+const DATE_ONLY_KEYS = new Set(['eta']);
+
+/** Deep-coerce an op result to clean JSON for MCP output: Dates → ISO strings
+ *  (date-only for DATE_ONLY_KEYS), NUMERIC_KEYS' numeric strings → numbers.
+ *  Applied to every op result by runOp. */
+function toJsonResult(value: unknown, key?: string): unknown {
+  if (value instanceof Date) {
+    const iso = value.toISOString();
+    return key !== undefined && DATE_ONLY_KEYS.has(key) ? iso.slice(0, 10) : iso;
   }
-  return out;
+  if (Array.isArray(value)) return value.map(v => toJsonResult(v));
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, toJsonResult(v, k)]),
+    );
+  }
+  if (key !== undefined && NUMERIC_KEYS.has(key) && typeof value === 'string') {
+    return Number(value);
+  }
+  return value;
 }
 
 /** Validate params against the op's declared schema; dispatch; never throw. */
@@ -313,7 +323,7 @@ export async function runOp(
     }
   }
   try {
-    return await op.handler(engine, params);
+    return toJsonResult(await op.handler(engine, params));
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) };
   }

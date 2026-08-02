@@ -32,6 +32,7 @@ test('import_json → export_json round-trips Bill\'s bom.json shape', async () 
   assert.equal(out.specs.length, 1);
   assert.equal(out.line_items.length, 1);
   assert.equal(out.line_items[0].unit_price, 11.99);
+  assert.equal(out.line_items[0].eta, '2026-08-02'); // date-only, matching bom.json
   // provenance fields survive the round trip
   assert.equal(out.line_items[0].chosen_because, '12V rail, 400mA < 3A budget');
   assert.equal(out.line_items[0].outcome, 'worked');

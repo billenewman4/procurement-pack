@@ -140,6 +140,21 @@ test('stale_orders finds ordered items with no recent event', async () => {
   assert.equal(stale[0].description, 'old order');
 });
 
+test('op results are clean JSON: Dates→ISO strings, unit_price→number, eta→date-only', async () => {
+  const p = await runOp(engine, 'create_project', { name: 'json-clean-test' }) as { id: string };
+  await runOp(engine, 'upsert_line_item', {
+    project_id: p.id, description: 'buck converter', unit_price: 11.99, eta: '2026-08-02',
+  });
+  const ctx = await runOp(engine, 'get_project_context', { project_id: p.id }) as {
+    project: { created_at: unknown };
+    line_items: { unit_price: unknown; eta: unknown; created_at: unknown }[];
+  };
+  assert.equal(typeof ctx.project.created_at, 'string');
+  assert.match(ctx.project.created_at as string, /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/);
+  assert.equal(ctx.line_items[0].unit_price, 11.99); // number, not "11.99"
+  assert.equal(ctx.line_items[0].eta, '2026-08-02'); // date column → date-only string
+});
+
 test('record_order_event cannot advance a line item in another project', async () => {
   const pA = await runOp(engine, 'create_project', { name: 'xproj-a' }) as { id: string };
   const pB = await runOp(engine, 'create_project', { name: 'xproj-b' }) as { id: string };
