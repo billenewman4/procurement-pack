@@ -1,7 +1,9 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { createTestEngine, type Engine } from '../src/engine.ts';
-import { runOp } from '../src/operations.ts';
+import { runOp, NUMERIC_KEYS, DATE_ONLY_KEYS } from '../src/operations.ts';
 
 let engine: Engine;
 before(async () => { engine = await createTestEngine(); });
@@ -153,6 +155,30 @@ test('op results are clean JSON: Dates→ISO strings, unit_price→number, eta�
   assert.match(ctx.project.created_at as string, /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/);
   assert.equal(ctx.line_items[0].unit_price, 11.99); // number, not "11.99"
   assert.equal(ctx.line_items[0].eta, '2026-08-02'); // date column → date-only string
+});
+
+test('schema drift tripwire: every numeric/date column is in the coercion key sets', () => {
+  // If someone adds a numeric or date (not timestamptz) column to schema.sql
+  // without teaching toJsonResult about it, MCP output regresses to driver
+  // strings / midnight-UTC timestamps. This test catches that at add time.
+  const schema = readFileSync(
+    fileURLToPath(new URL('../src/schema.sql', import.meta.url)), 'utf8');
+  const numericCols: string[] = [];
+  const dateCols: string[] = [];
+  for (const line of schema.split('\n')) {
+    const m = line.match(/^\s*(\w+)\s+(numeric|date)\b/i);
+    if (!m) continue; // timestamptz doesn't match \bdate\b
+    (m[2].toLowerCase() === 'numeric' ? numericCols : dateCols).push(m[1]);
+  }
+  // sanity: the parser actually found the known columns
+  assert.ok(numericCols.includes('unit_price'), 'schema parser should find unit_price');
+  assert.ok(dateCols.includes('eta'), 'schema parser should find eta');
+  for (const col of numericCols) {
+    assert.ok(NUMERIC_KEYS.has(col), `numeric column "${col}" missing from NUMERIC_KEYS`);
+  }
+  for (const col of dateCols) {
+    assert.ok(DATE_ONLY_KEYS.has(col), `date column "${col}" missing from DATE_ONLY_KEYS`);
+  }
 });
 
 test('record_order_event cannot advance a line item in another project', async () => {

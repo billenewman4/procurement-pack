@@ -34,7 +34,8 @@ Rules:
 ## Work split
 
 - **Bill:** `skills/part-search/`, `skills/gmail-orders/`
-- **Eshan:** Postgres + MCP connector, artifact/dashboard skill, DB write flows
+- **Eshan:** Postgres + MCP connector — **built** (`bomdb/`, registered via
+  `claude mcp add`), artifact/dashboard skill, DB write flows
 - **Shared contract:** `SCHEMA.md` — lock this together BEFORE building. Both
   skills' output formats are pinned to it.
 
@@ -47,6 +48,9 @@ Rules:
 2. **Gmail signal check**: search your own inbox for McMaster/Digi-Key/Amazon
    order emails. Confirm order #, items, and prices are actually extractable from
    the email bodies (some vendors send image-only or link-only confirmations).
+
+Status: email-extraction smoke passed on real inbox samples (Wayfair/IKEA,
+plaintext extractable); scheduled-task→custom-MCP test still open.
 
 ## Build order (Bill)
 

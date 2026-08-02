@@ -288,8 +288,8 @@ export const operations: Operation[] = [
  *  back timestamptz/date columns as Date objects and numeric columns as
  *  strings; `eta` is a SQL `date`, so it should read "2026-08-02", not a
  *  midnight-UTC timestamp. */
-const NUMERIC_KEYS = new Set(['unit_price']);
-const DATE_ONLY_KEYS = new Set(['eta']);
+export const NUMERIC_KEYS = new Set(['unit_price']);
+export const DATE_ONLY_KEYS = new Set(['eta']);
 
 /** Deep-coerce an op result to clean JSON for MCP output: Dates → ISO strings
  *  (date-only for DATE_ONLY_KEYS), NUMERIC_KEYS' numeric strings → numbers.

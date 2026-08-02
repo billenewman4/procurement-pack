@@ -3,7 +3,9 @@
 Skills never talk to "the database" directly; they talk to **the store**, resolved
 in this order:
 
-1. **Postgres MCP** (Eshan's hosted DB) — if the connector is available
+1. **bomdb MCP** (`bomdb/` in this repo) — if the connector is available.
+   Local-first: a real Postgres via PGLite at `~/.bomdb/data`, no server to run;
+   setting `DATABASE_URL` flips the same server to hosted Postgres.
 2. **Local store** — `~/.procurement-pack/<project-slug>/bom.json` (this spec)
 3. Neither → ask the user for context, operate read-only, warn that nothing persists
 

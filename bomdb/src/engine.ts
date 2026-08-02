@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -55,6 +55,8 @@ export async function createEngine(): Promise<Engine> {
   }
   const dataDir =
     process.env.BOMDB_DATA_DIR ?? join(homedir(), '.bomdb', 'data');
+  // PGLite mkdirs the leaf but not parents — create the full path up front.
+  mkdirSync(dataDir, { recursive: true });
   return pgliteEngine(new PGlite(dataDir));
 }
 
