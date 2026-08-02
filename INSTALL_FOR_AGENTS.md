@@ -17,6 +17,14 @@ failure branch and keep going — never abandon setup silently.
   skills auto-trigger in future sessions — this is the durable install on
   this surface. Tell the user to click Save on each card.
 
+If you are on path C, SAY SO to the user before proceeding, in plain words:
+"this session is a cloud container — it can't see folders on your computer
+or locally-configured MCP servers (like a local bomdb), and its files vanish
+when the session ends. The .skill saves are what persists." If the user
+wants the store on their machine or uses a local bomdb, tell them to rerun
+this install in a LOCAL Desktop session with a folder granted (or in Claude
+Code) — don't let them discover the difference by losing data.
+
 ## Step 1 — Get the pack
 
 **A (Claude Code):**
@@ -38,6 +46,11 @@ into the workspace folder and extract it there. Skills are used by reading
 uploaded claude.ai Skills later makes them auto-trigger.
 
 ## Step 2 — Initialize the store
+
+FIRST check whether bomdb MCP tools are available to you (tool names starting
+`bomdb` — e.g. `create_project`, `get_project_context`). If yes, the store is
+the database, not a file: create the project and specs through those tools and
+skip the bom.json below. If no, use the JSON store for this surface.
 
 [ASK] "What should we call your first project?" (one short name, e.g.
 "robot-v1").
@@ -99,5 +112,7 @@ CLAUDE.md so future sessions know these skills exist. Skip if declined.
 - Scheduled background email sync is proven on Claude Code cloud routines;
   on claude.ai scheduled tasks it's untested — the catch-up-on-open sweep
   covers the gap.
-- The hosted/shared database (bomdb) is not shipped yet; the local JSON
-  store is the current backend and migrates forward automatically later.
+- The bomdb database server is shipped (see `bomdb/README.md`): local-first
+  PGLite, or hosted Postgres via `DATABASE_URL`. It's a locally-registered
+  MCP server, so cloud sessions can't reach it — the local JSON store covers
+  those surfaces, and `import_json` migrates it forward mechanically.
