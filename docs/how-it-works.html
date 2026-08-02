@@ -1,0 +1,655 @@
+<title>Procurement Pack — How It Works</title>
+<style>
+  :root {
+    --ground: #f4f6f5;
+    --surface: #ffffff;
+    --ink: #1f262b;
+    --muted: #5c6871;
+    --line: #dde3e1;
+    --accent: #1d5f8a;
+    --accent-ink: #ffffff;
+    --accent-soft: #e3edf4;
+    --code-bg: #eef1f0;
+    --ok: #2e7d4f;
+    --ok-soft: #e2f0e8;
+    --warn: #9a6b0a;
+    --warn-soft: #f6ecd4;
+    --ship: #1d5f8a;
+    --ship-soft: #e3edf4;
+    --idle: #5c6871;
+    --idle-soft: #e8ebea;
+    --bad: #a63a2e;
+    --bad-soft: #f5e3e0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #14181b;
+      --surface: #1c2226;
+      --ink: #e3e8ea;
+      --muted: #97a3ab;
+      --line: #2d363c;
+      --accent: #6fa8d0;
+      --accent-ink: #10161a;
+      --accent-soft: #1e3141;
+      --code-bg: #232b30;
+      --ok: #66b98a;
+      --ok-soft: #1d3327;
+      --warn: #d8ab4e;
+      --warn-soft: #37301c;
+      --ship: #6fa8d0;
+      --ship-soft: #1e3141;
+      --idle: #97a3ab;
+      --idle-soft: #262e33;
+      --bad: #d47f72;
+      --bad-soft: #3a2523;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #14181b; --surface: #1c2226; --ink: #e3e8ea; --muted: #97a3ab;
+    --line: #2d363c; --accent: #6fa8d0; --accent-ink: #10161a; --accent-soft: #1e3141;
+    --code-bg: #232b30; --ok: #66b98a; --ok-soft: #1d3327; --warn: #d8ab4e;
+    --warn-soft: #37301c; --ship: #6fa8d0; --ship-soft: #1e3141; --idle: #97a3ab;
+    --idle-soft: #262e33; --bad: #d47f72; --bad-soft: #3a2523;
+  }
+  :root[data-theme="light"] {
+    --ground: #f4f6f5; --surface: #ffffff; --ink: #1f262b; --muted: #5c6871;
+    --line: #dde3e1; --accent: #1d5f8a; --accent-ink: #ffffff; --accent-soft: #e3edf4;
+    --code-bg: #eef1f0; --ok: #2e7d4f; --ok-soft: #e2f0e8; --warn: #9a6b0a;
+    --warn-soft: #f6ecd4; --ship: #1d5f8a; --ship-soft: #e3edf4; --idle: #5c6871;
+    --idle-soft: #e8ebea; --bad: #a63a2e; --bad-soft: #f5e3e0;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    font-size: 16px;
+  }
+  .page { max-width: 880px; margin: 0 auto; padding: 48px 24px 96px; }
+  .prose { max-width: 700px; }
+
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 12px;
+  }
+  h1 {
+    font-size: 34px; line-height: 1.15; margin: 0 0 10px;
+    letter-spacing: -0.015em; text-wrap: balance;
+  }
+  .subtitle { color: var(--muted); font-size: 17px; margin: 0 0 8px; max-width: 640px; }
+  h2 {
+    font-size: 22px; margin: 64px 0 6px; letter-spacing: -0.01em; text-wrap: balance;
+    scroll-margin-top: 24px;
+  }
+  h2 .qtag {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px; color: var(--muted); font-weight: 400;
+    letter-spacing: 0.06em; display: block; margin-bottom: 2px;
+  }
+  h3 { font-size: 16px; margin: 28px 0 6px; }
+  p { margin: 10px 0; }
+  a { color: var(--accent); }
+  strong { font-weight: 600; }
+
+  code, .mono {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.88em;
+  }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+
+  .rule { border: 0; border-top: 1px solid var(--line); margin: 48px 0; }
+
+  /* ---------- cast card ---------- */
+  .cast {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 20px 24px; margin: 28px 0;
+  }
+  .cast .label {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 8px;
+  }
+  .cast p { margin: 6px 0; }
+
+  /* ---------- diagram ---------- */
+  .diagram {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 28px 20px; margin: 24px 0; overflow-x: auto;
+  }
+  .diagram-inner { min-width: 560px; display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .diag-row { display: flex; gap: 16px; justify-content: center; align-items: stretch; }
+  .node {
+    border: 1px solid var(--line); border-radius: 6px; padding: 10px 16px;
+    background: var(--ground); text-align: center; min-width: 132px;
+  }
+  .node .n-title { font-weight: 600; font-size: 14px; }
+  .node .n-sub { font-size: 12px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+  .node.hub {
+    background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+    padding: 14px 28px;
+  }
+  .node.hub .n-sub { color: var(--accent-ink); opacity: 0.75; }
+  .arrow {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    color: var(--muted); font-size: 12px; text-align: center;
+    padding: 6px 0; line-height: 1.3;
+  }
+  .diag-caption { font-size: 13px; color: var(--muted); margin-top: 14px; text-align: center; }
+
+  /* ---------- walkthrough steps ---------- */
+  .step { display: flex; gap: 18px; margin: 30px 0; }
+  .step-num {
+    flex: none; width: 34px; height: 34px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 15px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; margin-top: 2px;
+  }
+  .step-body { min-width: 0; }
+  .step-body h3 { margin: 4px 0 6px; font-size: 17px; }
+  .step-body .when {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+
+  /* ---------- chat excerpts ---------- */
+  .chat {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px 18px; margin: 14px 0; font-size: 14.5px;
+  }
+  .chat .who {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); margin: 10px 0 2px;
+  }
+  .chat .who:first-child { margin-top: 0; }
+  .chat .who.claude { color: var(--accent); }
+  .chat p { margin: 2px 0 8px; }
+  .chat .aside { color: var(--muted); font-style: italic; font-size: 13.5px; }
+
+  /* ---------- status chips ---------- */
+  .chip {
+    display: inline-block; padding: 1px 9px; border-radius: 999px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px; white-space: nowrap;
+  }
+  .chip.needed { background: var(--idle-soft); color: var(--idle); }
+  .chip.ordered { background: var(--warn-soft); color: var(--warn); }
+  .chip.shipped { background: var(--ship-soft); color: var(--ship); }
+  .chip.delivered { background: var(--ok-soft); color: var(--ok); }
+  .chip.issue { background: var(--bad-soft); color: var(--bad); }
+
+  /* ---------- tables ---------- */
+  .table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 14px; }
+  th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  th {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500; background: var(--ground);
+  }
+  td .sub { display: block; font-size: 12.5px; color: var(--muted); }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- schema cards ---------- */
+  .schema-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0; }
+  .schema-card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .schema-card .t-name {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-weight: 600; font-size: 14px; color: var(--accent); margin-bottom: 4px;
+  }
+  .schema-card .t-role { font-size: 13px; color: var(--muted); margin-bottom: 8px; line-height: 1.45; }
+  .schema-card ul { margin: 0; padding-left: 18px; font-size: 13px; }
+  .schema-card li { margin: 2px 0; }
+
+  /* ---------- two-column benefit ---------- */
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin: 18px 0; }
+  .col-card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; }
+  .col-card h4 { margin: 0 0 4px; font-size: 15px; }
+  .col-card .tag {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+  .col-card ul { margin: 8px 0 0; padding-left: 18px; font-size: 14px; }
+  .col-card li { margin: 5px 0; }
+
+  /* ---------- callout ---------- */
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    border-radius: 0 8px 8px 0; padding: 12px 18px; margin: 18px 0; font-size: 14.5px;
+  }
+  .callout p { margin: 6px 0; }
+
+  /* ---------- build status ---------- */
+  .done { color: var(--ok); font-weight: 600; }
+  .todo { color: var(--warn); font-weight: 600; }
+
+  .prompt-box {
+    background: var(--code-bg); border-radius: 8px; padding: 12px 16px; margin: 12px 0;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px; overflow-x: auto; white-space: pre-wrap;
+  }
+
+  ol.toc { columns: 2; column-gap: 32px; font-size: 14.5px; padding-left: 20px; margin: 16px 0; }
+  ol.toc li { margin: 3px 0; break-inside: avoid; }
+  @media (max-width: 560px) { ol.toc { columns: 1; } }
+</style>
+
+<div class="page">
+  <p class="eyebrow">Procurement Pack · Internal explainer · Aug 2026</p>
+  <h1>How the whole thing works, end to end</h1>
+  <p class="subtitle">Followed through one made-up beginner build: Maya and Jordan, two amateurs,
+  making an automatic plant-waterer for under $100. Every question from the planning
+  session answered along the way.</p>
+
+  <ol class="toc">
+    <li><a href="#cast">The example project</a></li>
+    <li><a href="#map">The system map</a></li>
+    <li><a href="#walkthrough">Day-by-day walkthrough</a></li>
+    <li><a href="#data">Where the data lives</a></li>
+    <li><a href="#ui">The "front end" question</a></li>
+    <li><a href="#db">The database, table by table</a></li>
+    <li><a href="#benefits">Who wins, and when</a></li>
+    <li><a href="#status">Build status: Bill / Eshan</a></li>
+    <li><a href="#decisions">Locked schema decisions</a></li>
+  </ol>
+
+  <hr class="rule">
+
+  <h2 id="cast">The example project</h2>
+  <div class="cast">
+    <div class="label">The cast</div>
+    <p><strong>Maya</strong> — comfortable with a soldering iron, has never managed a parts list.
+    <strong>Jordan</strong> — good at spreadsheets, has never picked a connector.
+    Both already use Claude Desktop for everyday stuff.</p>
+    <p><strong>The build</strong> — an automatic plant-waterer: an Arduino reads a soil-moisture
+    sensor and runs a small 12&nbsp;V pump through a relay when the pot gets dry.
+    Budget <span class="mono num">$100</span>. About ten parts, three vendors, two weeks of tinkering.</p>
+    <p class="chat aside" style="margin:8px 0 0; padding:0; border:0; background:none;">This is
+    the same shape as our own Arduino dogfood project — small enough to finish, real enough
+    that ordering actually hurts without help.</p>
+  </div>
+
+  <h2 id="map">The system map <span class="qtag" style="display:inline">· Q3, Q7 — how the pieces connect</span></h2>
+  <p class="prose">One rule explains the whole architecture: <strong>Claude is the hub, and the only
+  thing that ever writes to the database.</strong> Skills teach it procedures; connectors give it
+  hands; everything flows through the middle.</p>
+
+  <div class="diagram">
+    <div class="diagram-inner">
+      <div class="diag-row">
+        <div class="node">
+          <div class="n-title">Gmail</div>
+          <div class="n-sub">read-only, via the Gmail<br>connector they already use</div>
+        </div>
+        <div class="node">
+          <div class="n-title">Part search</div>
+          <div class="n-sub">Amazon · McMaster<br>Digi-Key · datasheets</div>
+        </div>
+      </div>
+      <div class="arrow">└──── structured text only ────┘<br>▼</div>
+      <div class="diag-row">
+        <div class="node hub">
+          <div class="n-title">Claude</div>
+          <div class="n-sub">Desktop or Code · runs the skills · the only writer</div>
+        </div>
+      </div>
+      <div class="arrow">┌────── reads &amp; writes ──────┐<br>▼&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▼</div>
+      <div class="diag-row">
+        <div class="node">
+          <div class="n-title">bomdb</div>
+          <div class="n-sub">MCP server → Postgres<br>(the only connector to data)</div>
+        </div>
+        <div class="node">
+          <div class="n-title">Dashboard artifact</div>
+          <div class="n-sub">generated snapshot —<br>render target, can't reach the DB</div>
+        </div>
+      </div>
+    </div>
+    <div class="diag-caption">Gmail and search never touch the database. They hand Claude
+    structured text; Claude reconciles it and writes. The artifact is a picture of the data,
+    regenerated on request.</div>
+  </div>
+
+  <h2 id="walkthrough">The walkthrough</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <div class="when">Day 0 · ~5 minutes · Q1, Q5 — setup &amp; the account question</div>
+      <h3>Maya pastes one prompt</h3>
+      <p>There is no signup page, no email verification, no password. Maya opens Claude and pastes:</p>
+      <div class="prompt-box">Fetch https://raw.githubusercontent.com/.../INSTALL_FOR_AGENTS.md
+and follow it to set up the procurement pack for me.</div>
+      <p>Her Claude reads the install doc (it's written <em>to the agent</em>, not to her),
+      installs the skills, and asks her two questions in plain language. The important one is the data deal:</p>
+      <div class="chat">
+        <div class="who claude">Claude</div>
+        <p>Where should your parts data live? <strong>Local</strong> — a file on this machine,
+        nobody else can ever see it. Or <strong>hosted</strong> — a database we run, so your BOM
+        survives machine changes and the team can see what you're ordering to eventually stock
+        parts and get you better prices.</p>
+        <div class="who">Maya</div>
+        <p>Hosted is fine.</p>
+      </div>
+      <p>That answer <em>is</em> the account. In hosted mode we hand her Claude a connection
+      credential scoped to her own rows (row-level security — she can never read anyone
+      else's data, enforced by the database, not by politeness). In local mode there's
+      nothing to create at all. Her consent choice is recorded in the
+      <code>users</code> table: <code>local</code>, <code>hosted</code>, or later
+      <code>community</code>.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <div class="when">Day 0 · Q2 — talking about the project</div>
+      <h3>They describe the build in plain conversation</h3>
+      <p>No forms. Jordan just talks to Claude Desktop the way they already do:</p>
+      <div class="chat">
+        <div class="who">Jordan</div>
+        <p>We're building an automatic plant-waterer. Arduino Uno, a soil sensor, and a little
+        12V pump. We want one 12V wall supply powering everything, we're in the US, and we'd
+        rather pay a couple bucks more for stuff that arrives this week.</p>
+        <div class="who claude">Claude</div>
+        <p>Created project <strong>plant-waterer-v1</strong>. I saved these specs: single 12V
+        supply stepped down to 5V for logic · US vendors, fast shipping preferred · beginner
+        solder-friendly parts. I'll check every part against these before suggesting it.</p>
+      </div>
+      <p>Behind the scenes Claude called two bomdb operations — <code>create_project</code> and
+      spec upserts into <code>project_specs</code>. Those saved specs are the pack's core trick:
+      they're the context every future search loads first, so Claude never suggests a 24&nbsp;V
+      pump for a 12&nbsp;V system.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <div class="when">Day 1 · Q3 — the pack at work</div>
+      <h3>Sourcing parts, with the skill steering</h3>
+      <p>Maya asks for the first real part. The <code>part-search</code> skill kicks in and follows
+      its opinionated procedure: <strong>load specs → ask one round of questions → search vendors
+      in order → verify the datasheet, not the listing.</strong></p>
+      <div class="chat">
+        <div class="who">Maya</div>
+        <p>Find me a pump for this.</p>
+        <div class="who claude">Claude</div>
+        <p>Checking your specs first — 12V supply, beginner-friendly. One question: does the pump
+        need to be food-safe/aquarium-safe, or is any small 12V pump fine?</p>
+        <div class="who">Maya</div>
+        <p>Just watering a plant, anything works.</p>
+        <div class="who claude">Claude</div>
+        <p>Found a 12V DC 3W peristaltic pump on Amazon, $11.99, arrives Thursday. The listing
+        says "12V" but I checked the seller's spec sheet — it draws 400mA peak, well within your
+        supply. It's self-priming, so no check valve needed. Add it to the BOM?</p>
+      </div>
+      <p>On "yes," Claude calls <code>upsert_line_item</code>. The row lands with
+      <span class="chip needed">needed</span> → <span class="chip ordered">ordered</span> once
+      Maya buys it, and — because of the schema lock — <code>chosen_because:
+      "12V rail, 400mA &lt; 3A budget, self-priming"</code> gets stored with it. That's the
+      provenance that makes the long-term commodity map possible.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <div class="when">Days 2–10 · Q7 — the email pipeline</div>
+      <h3>Orders track themselves from Gmail</h3>
+      <p>Maya buys the pump on Amazon herself — the pack doesn't place orders in v1. Amazon
+      emails her a confirmation, like always. Here's what happens to it:</p>
+      <p>A <strong>scheduled task</strong> (set up during install) runs the
+      <code>gmail-orders</code> skill daily. It uses the <strong>Gmail connector Maya already
+      authorized in Claude</strong> — we never see her password, never get inbox access
+      ourselves, and the skill is read-only by contract. It searches
+      <code>category:purchases</code> for the last day, classifies candidates from
+      sender/subject/snippet alone, opens the body only for actual order emails, and emits
+      structured events:</p>
+      <div class="prompt-box">{ vendor: "Amazon", order_number: "112-4477", event: "shipped",
+  eta: "2026-08-06", raw_summary: "Amazon order 112-4477 shipped, ETA Aug 6" }</div>
+      <p>Claude matches that to the pump line and moves it
+      <span class="chip ordered">ordered</span> → <span class="chip shipped">shipped</span>.
+      What's stored: that one-line summary and the Gmail message ID (so she can say "show me
+      the email"). What's never stored: email bodies, or anything about the other 40 emails
+      in her inbox that day. Statuses only move <em>forward</em> automatically — anything
+      weird (a delivered item suddenly "backordered") gets flagged to her instead of changed.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <div class="when">Any day · Q8, Q9, Q10 — seeing and editing</div>
+      <h3>"Where are we on orders?"</h3>
+      <p>Jordan asks, and Claude regenerates the <strong>dashboard artifact</strong> — a web page
+      built fresh from the database: every line item with its status chip, what's arriving when,
+      total spent against the $100 budget, and anything gone stale (ordered &gt;7 days, no
+      shipping email — nudge the vendor).</p>
+      <p>To change anything, Jordan just says it: <em>"we returned the first sensor, swap in the
+      capacitive one"</em> — and Claude updates the rows, asking for confirmation since that's
+      a backward status move. Conversation is the edit interface. More on why in
+      <a href="#ui">the front-end section</a>.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-body">
+      <div class="when">Day 12 · the part that quietly matters most</div>
+      <h3>Something breaks — and the pack learns</h3>
+      <div class="chat">
+        <div class="who">Maya</div>
+        <p>The Arduino keeps rebooting when the pump kicks on.</p>
+        <div class="who claude">Claude</div>
+        <p>Classic symptom — the pump's startup surge is sagging your 5V rail. Before buying
+        anything: are the pump and Arduino sharing the same buck converter? If so, the fix is a
+        capacitor across the pump leads, or powering the pump straight off 12V through the
+        relay — not a new Arduino.</p>
+      </div>
+      <p>The skill diagnoses <em>before</em> it sells — buying a replacement for a part that
+      failed for a preventable reason just recreates the failure. And the outcome lands in the
+      data: the converter line gets <code>outcome: worked</code>-with-a-caveat notes like
+      <code>"browned out under pump inrush until cap added."</code> Multiply that by hundreds of
+      builders and you have knowledge that exists nowhere else — which parts <em>actually work</em>
+      for which jobs.</p>
+    </div>
+  </div>
+
+  <hr class="rule">
+
+  <h2 id="data">Where the data lives <span class="qtag" style="display:inline">· Q4, Q5</span></h2>
+  <p class="prose">One schema, two homes. Skills talk to "the store" and don't care which one
+  is behind it:</p>
+  <div class="table-wrap"><table>
+    <tr><th></th><th>Local mode</th><th>Hosted mode</th></tr>
+    <tr>
+      <td><strong>What it is</strong></td>
+      <td>A <code>bom.json</code> file on their machine (later: PGLite, a full Postgres running
+      in-process — no server)</td>
+      <td>One Postgres we run, shared tables, row-level security per user</td>
+    </tr>
+    <tr>
+      <td><strong>Account needed</strong></td>
+      <td>None. Nothing to create.</td>
+      <td>No signup flow — we provision a scoped credential during install (v1: by hand,
+      for our five users)</td>
+    </tr>
+    <tr>
+      <td><strong>Who can see it</strong></td>
+      <td>Nobody but them, ever</td>
+      <td>Them + us. Said out loud at install — that's the deal, and it's why hosted mode
+      funds a free tool</td>
+    </tr>
+    <tr>
+      <td><strong>What they get for it</strong></td>
+      <td>Total privacy</td>
+      <td>Durability, team visibility later, and eventually stocked parts &amp; better prices</td>
+    </tr>
+  </table></div>
+  <p class="prose">The third consent tier, <code>community</code>, exists in the schema but does
+  nothing in v1. It's reserved for the commodity map: contributing anonymized
+  part→application→outcome knowledge (commodity parts only, published only after N distinct
+  users report the same pair) in exchange for smarter search for everyone.</p>
+
+  <h2 id="ui">The "front end" question <span class="qtag" style="display:inline">· Q8, Q9, Q10</span></h2>
+  <p class="prose"><strong>There is no SaaS UI, on purpose.</strong> No website, no login page,
+  no React app to maintain. The lesson from Lora v1: building and maintaining a UI is the
+  expensive part, and agents made it unnecessary.</p>
+  <p class="prose">What exists instead:</p>
+  <p class="prose"><strong>Reading</strong> — the dashboard is a Claude artifact: a real web page
+  with the full BOM, status chips, ETAs, and budget, regenerated from the database whenever
+  asked. It's a snapshot by design — artifacts can't reach the database (the browser sandbox
+  blocks network calls), which is also a security feature: the page can never leak credentials
+  because it never has any.</p>
+  <p class="prose"><strong>Editing</strong> — conversation. "Bump the tubing to 3 meters."
+  "Mark the enclosure delivered." "Kill the backup sensor line." Claude validates each change
+  against the schema rules (forward-only statuses, confirmation for backward moves) and writes
+  it. This is strictly better than a form: the user gets an editor that pushes back when an
+  edit doesn't make sense.</p>
+  <div class="callout">
+    <p><strong>If a real UI is ever justified</strong>, the database is already the system of
+    record, so a web app can be added on top without changing anything underneath. That's a
+    "when we know we've won" decision, not a v1 one.</p>
+  </div>
+
+  <h2 id="db">The database, table by table <span class="qtag" style="display:inline">· Q11</span></h2>
+  <p class="prose">Five tables. Small on purpose — this is a transactional store for BOMs, not a
+  knowledge brain (that was the big lesson from the gbrain teardown: line items need SQL
+  aggregation, not markdown pages).</p>
+  <div class="schema-grid">
+    <div class="schema-card">
+      <div class="t-name">users</div>
+      <div class="t-role">Hosted mode only. Who they are + the consent tier they chose.</div>
+      <ul><li>name, email</li><li><code>sharing</code>: local · hosted · community</li></ul>
+    </div>
+    <div class="schema-card">
+      <div class="t-name">projects</div>
+      <div class="t-role">One row per build. Everything else hangs off it.</div>
+      <ul><li>"plant-waterer-v1"</li><li><code>user_id</code> scopes it in hosted mode</li></ul>
+    </div>
+    <div class="schema-card">
+      <div class="t-name">project_specs</div>
+      <div class="t-role">The saved context that makes search smart. Freeform text + a category tag.</div>
+      <ul><li>power: "12V in, 5V logic, 3A max"</li><li>constraints: "US vendors, fast ship"</li></ul>
+    </div>
+    <div class="schema-card">
+      <div class="t-name">line_items</div>
+      <div class="t-role">The BOM itself. One row per part.</div>
+      <ul><li>description, vendor, qty, price</li>
+      <li>status: needed → researching → ordered → shipped → delivered (· issue)</li>
+      <li><code>chosen_because</code> + <code>outcome</code> — the commodity-map seeds</li></ul>
+    </div>
+    <div class="schema-card">
+      <div class="t-name">order_events</div>
+      <div class="t-role">Append-only audit trail from Gmail. History is never overwritten.</div>
+      <ul><li>vendor, order #, event, ETA</li><li>Gmail message ID for "show me the email"</li>
+      <li>one-line summary — never bodies</li></ul>
+    </div>
+  </div>
+
+  <h2 id="benefits">Who wins, and when <span class="qtag" style="display:inline">· Q6</span></h2>
+  <div class="cols">
+    <div class="col-card">
+      <div class="tag">Maya &amp; Jordan · now</div>
+      <h4>Why they enjoy it week one</h4>
+      <ul>
+        <li>Search that knows their system — no more "12V pump" that needs 24V. The datasheet
+        check catches what listings hide.</li>
+        <li>Nothing falls through the cracks: the BOM updates itself from email, and stale
+        orders get flagged before they stall the build.</li>
+        <li>Zero new tools to learn. It lives inside the Claude they already use, free.</li>
+      </ul>
+    </div>
+    <div class="col-card">
+      <div class="tag">Maya &amp; Jordan · later</div>
+      <h4>Why they stay</h4>
+      <ul>
+        <li>Every project gets easier — specs, vendors, and what-worked carry forward.</li>
+        <li>Reordering is one sentence: the whole history is queryable.</li>
+        <li>Eventually: "want this 30% cheaper from our stock, arriving tomorrow?" — the
+        distributor upside, passed through.</li>
+      </ul>
+    </div>
+    <div class="col-card">
+      <div class="tag">Us · now</div>
+      <h4>Short-term: learning</h4>
+      <ul>
+        <li>Watch real procurement happen end-to-end — where the workflow actually breaks
+        (our bet: at vendor interaction, not tracking).</li>
+        <li>Trust and a direct line to the exact people who become Westgate's first
+        customers.</li>
+        <li>Proof of usage — did they turn it on, do they come back.</li>
+      </ul>
+    </div>
+    <div class="col-card">
+      <div class="tag">Us · later</div>
+      <h4>Long-term: two data assets</h4>
+      <ul>
+        <li><strong>Demand signal</strong> (private): what a niche orders, in what volume —
+        what Westgate stocks, and for whom.</li>
+        <li><strong>Commodity map</strong> (open, k-anonymized): which parts work for which
+        applications — a knowledge layer nobody else can build, and the moat that makes the
+        free tool defensible.</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="rule">
+
+  <h2 id="status">Build status <span class="qtag" style="display:inline">· what Bill did / what Eshan does</span></h2>
+  <div class="table-wrap"><table>
+    <tr><th>Piece</th><th>Status</th><th>Notes</th></tr>
+    <tr><td><code>part-search</code> skill</td><td class="done">Built (Bill)</td>
+      <td>Specs-first search, datasheet verification, diagnose mode</td></tr>
+    <tr><td><code>gmail-orders</code> skill</td><td class="done">Built (Bill)</td>
+      <td>Read-only sweep → structured events → reconcile, privacy contract</td></tr>
+    <tr><td>Store protocol + <code>bom.json</code> fallback</td><td class="done">Built (Bill)</td>
+      <td>Skills work today with no database; swap to Postgres is invisible to them</td></tr>
+    <tr><td>Schema contract</td><td class="done">Locked 2026-08-02</td>
+      <td>Four draft questions resolved + provenance columns added; Bill to ack</td></tr>
+    <tr><td>Evals + install doc</td><td class="done">Built (Bill)</td>
+      <td>Baseline transcripts of vanilla Claude failing; INSTALL_FOR_AGENTS.md drafted</td></tr>
+    <tr><td>Smoke test: scheduled task → custom MCP</td><td class="todo">Next (Eshan)</td>
+      <td>Decides whether daily email sync is push or session-start catch-up</td></tr>
+    <tr><td>Smoke test: real vendor emails parseable?</td><td class="todo">Next (Eshan)</td>
+      <td>McMaster / Digi-Key / Amazon confirmations on a real inbox</td></tr>
+    <tr><td><code>bomdb</code> MCP server</td><td class="todo">To build (Eshan)</td>
+      <td>gbrain's scaffolding (~450 lines) + 5 tables + ~10 operations; PGLite local,
+      <code>DATABASE_URL</code> flips to hosted</td></tr>
+    <tr><td>Dashboard artifact skill</td><td class="todo">To build (Eshan)</td>
+      <td>Regenerate the BOM dashboard from the store</td></tr>
+    <tr><td>JSON export/import</td><td class="todo">To build (Eshan)</td>
+      <td>Round-trips Bill's exact <code>bom.json</code> shape</td></tr>
+    <tr><td>Dogfood: the Arduino build</td><td class="todo">Together</td>
+      <td>Run our own project through it until it survives reality — then Clark &amp; Harry</td></tr>
+  </table></div>
+
+  <h2 id="decisions">Locked schema decisions <span class="qtag" style="display:inline">· 2026-08-02</span></h2>
+  <div class="table-wrap"><table>
+    <tr><th>#</th><th>Decision</th><th>Why</th></tr>
+    <tr><td class="num">1</td><td>One database, <code>user_id</code> + row-level security —
+      not a DB per user</td>
+      <td>Cross-user aggregation is the whole point of hosted mode; gbrain's company-brain
+      proves the pattern</td></tr>
+    <tr><td class="num">2</td><td><code>project_specs</code> stays freeform text</td>
+      <td>Engineers dictate specs conversationally; structure is derived later, never typed</td></tr>
+    <tr><td class="num">3</td><td>Statuses move forward automatically, backward only with
+      user confirmation; the email task never moves anything backward on its own</td>
+      <td>The automated pipeline can't silently corrupt state; every transition is audited</td></tr>
+    <tr><td class="num">4</td><td>Provenance columns (<code>chosen_because</code>,
+      <code>outcome</code>) + <code>users.sharing</code> consent tier</td>
+      <td>The commodity map becomes a future query instead of a dataset we wish we'd
+      collected; the data deal is explicit from day one</td></tr>
+  </table></div>
+
+  <p style="color: var(--muted); font-size: 13.5px; margin-top: 48px;">Written for the
+  procurement-pack repo · reflects SCHEMA.md as locked 2026-08-02 · the Maya/Jordan build is
+  fictional; the mechanics are exactly what v1 does.</p>
+</div>

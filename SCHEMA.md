@@ -1,12 +1,25 @@
-# Schema Contract — DRAFT (lock with Eshan before building)
+# Schema Contract — LOCKED 2026-08-02 (Eshan; Bill to ack)
 
 This is the interface between all workstreams. Both skills emit records shaped
 like this; the DB tables mirror it. Change it here first, everywhere else second.
+
+Lock resolutions are inline below (see "Locked decisions"). All changes vs. the
+draft are additive or as-drafted — no skill output format changes.
+
+## users (hosted mode only)
+| col | type | notes |
+|---|---|---|
+| id | uuid | |
+| name | text | |
+| email | text | |
+| sharing | enum | `local` \| `hosted` \| `community` — the explicit data deal. `community` is a stub for the commodity-map tier; does nothing in v0 |
+| created_at | timestamptz | |
 
 ## projects
 | col | type | notes |
 |---|---|---|
 | id | uuid | |
+| user_id | uuid | nullable in local mode; set in hosted mode. Everything else scopes through project_id |
 | name | text | e.g. "bark's robot v1" |
 | created_at | timestamptz | |
 
@@ -36,6 +49,9 @@ The context store that makes search work (Clark's "saved prompts", persisted).
 | ordered_at | timestamptz | nullable |
 | eta | date | nullable |
 | notes | text | spec-match caveats, alternates considered |
+| chosen_because | text | nullable — which spec constraints this part satisfied ("12V rail, 3A max, barrel jack in"). Commodity-map provenance; part-search fills it when it adds a line |
+| outcome | enum | nullable — `worked` \| `failed` \| `returned`. Set later, usually via part-search's diagnose mode |
+| outcome_notes | text | nullable — why it failed/was returned ("browned out under pump inrush") |
 
 ## order_events (audit trail; gmail-orders appends here)
 | col | type | notes |
@@ -51,7 +67,32 @@ The context store that makes search work (Clark's "saved prompts", persisted).
 | email_ref | text | Gmail message id, for "show me the email" |
 | raw_summary | text | one-line extract, no full email bodies stored |
 
-## Open questions for the schema lock
-- Per-user isolation: separate databases vs one DB with schemas + RLS?
-- Does `project_specs` need structure (key/value) or is freeform text enough for v0?
-- Status transitions: who may move a line backward (e.g. `delivered` → `issue`)?
+## Locked decisions (2026-08-02)
+
+1. **Per-user isolation → one DB, shared tables, `user_id` on `projects`,
+   row-level security with per-user credentials.** Rationale: cross-user
+   aggregation (demand signal, commodity map) is the point of hosted mode;
+   separate DBs make it permanently painful. Reference implementation:
+   gbrain's company-brain mode (scoped-by-login RLS, fuzz-tested zero leaks).
+   Local mode (PGLite / bom.json) needs no isolation — it's physically the
+   user's machine.
+
+2. **`project_specs` stays freeform text + category tag, as drafted.**
+   Engineers dictate specs conversationally; Claude parses freeform fine.
+   Structured application tags are *derived later* for the commodity map,
+   never typed by users.
+
+3. **Status transitions: forward-only automatic.** Backward moves and moves
+   to `issue` require explicit user confirmation. The scheduled gmail-orders
+   task may NEVER move a status backward autonomously — it flags anomalies
+   (e.g. a `delivered` item reported backordered) for the user. Every
+   transition is recorded in `order_events`; history is never overwritten.
+
+4. **Provenance columns added** (`chosen_because`, `outcome`, `outcome_notes`
+   on `line_items`) so the commodity map is a future query, not a
+   wish-we'd-collected-it dataset. All nullable — skills that don't know
+   them write null. **`users` table added** with the explicit `sharing`
+   consent tier (`local`/`hosted`/`community`); `community` is a stub in v0.
+
+Bill: these are all additive or as-drafted — your two skills' output formats
+are unchanged. Ack or object here.
