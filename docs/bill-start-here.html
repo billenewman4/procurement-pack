@@ -1,26 +1,30 @@
-<title>Procurement Pack — Bill: Start Here</title>
+<title>Desk Air-Quality Monitor — Bill: Start Here</title>
 <style>
   :root {
     --ground: #f4f6f5; --surface: #ffffff; --ink: #1f262b; --muted: #5c6871;
     --line: #dde3e1; --accent: #1d5f8a; --accent-ink: #ffffff; --accent-soft: #e3edf4;
     --code-bg: #eef1f0; --ok: #2e7d4f; --ok-soft: #e2f0e8; --warn: #9a6b0a; --warn-soft: #f6ecd4;
+    --idle: #5c6871; --idle-soft: #e8ebea;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --ground: #14181b; --surface: #1c2226; --ink: #e3e8ea; --muted: #97a3ab;
       --line: #2d363c; --accent: #6fa8d0; --accent-ink: #10161a; --accent-soft: #1e3141;
       --code-bg: #232b30; --ok: #66b98a; --ok-soft: #1d3327; --warn: #d8ab4e; --warn-soft: #37301c;
+      --idle: #97a3ab; --idle-soft: #262e33;
     }
   }
   :root[data-theme="dark"] {
     --ground: #14181b; --surface: #1c2226; --ink: #e3e8ea; --muted: #97a3ab;
     --line: #2d363c; --accent: #6fa8d0; --accent-ink: #10161a; --accent-soft: #1e3141;
     --code-bg: #232b30; --ok: #66b98a; --ok-soft: #1d3327; --warn: #d8ab4e; --warn-soft: #37301c;
+    --idle: #97a3ab; --idle-soft: #262e33;
   }
   :root[data-theme="light"] {
     --ground: #f4f6f5; --surface: #ffffff; --ink: #1f262b; --muted: #5c6871;
     --line: #dde3e1; --accent: #1d5f8a; --accent-ink: #ffffff; --accent-soft: #e3edf4;
     --code-bg: #eef1f0; --ok: #2e7d4f; --ok-soft: #e2f0e8; --warn: #9a6b0a; --warn-soft: #f6ecd4;
+    --idle: #5c6871; --idle-soft: #e8ebea;
   }
   * { box-sizing: border-box; }
   body {
@@ -35,7 +39,7 @@
     color: var(--accent); margin: 0 0 12px;
   }
   h1 { font-size: 32px; line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.015em; text-wrap: balance; }
-  .subtitle { color: var(--muted); font-size: 17px; margin: 0; max-width: 620px; }
+  .subtitle { color: var(--muted); font-size: 17px; margin: 0; max-width: 640px; }
   h2 { font-size: 21px; margin: 56px 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
   p { margin: 10px 0; }
   a { color: var(--accent); }
@@ -68,78 +72,71 @@
     font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
     color: var(--muted); font-weight: 500; background: var(--ground);
   }
+  .chip {
+    display: inline-block; padding: 1px 9px; border-radius: 999px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11.5px; white-space: nowrap;
+  }
+  .chip.needed { background: var(--idle-soft); color: var(--idle); }
+  .chip.todo { background: var(--warn-soft); color: var(--warn); }
   .done { color: var(--ok); font-weight: 600; }
-  .open { color: var(--warn); font-weight: 600; }
   .callout {
     border-left: 3px solid var(--accent); background: var(--accent-soft);
     border-radius: 0 8px 8px 0; padding: 12px 18px; margin: 18px 0; font-size: 14.5px;
   }
   .callout p { margin: 6px 0; }
-  ul { margin: 8px 0; padding-left: 22px; }
+  ul, ol { margin: 8px 0; padding-left: 22px; }
   li { margin: 5px 0; }
 </style>
 
 <div class="page">
-  <p class="eyebrow">Procurement Pack · team handoff · Aug 2026</p>
-  <h1>Bill — the shared database is live. Here's everything.</h1>
-  <p class="subtitle">What we're building, what shipped this weekend, and your 5-minute
-  path onto the shared BOM database.</p>
+  <p class="eyebrow">Team project · Aug 2026</p>
+  <h1>We're building a desk air-quality monitor — and procuring every part through our own pack</h1>
+  <p class="subtitle">The dogfood project from the whiteboard session, now real: one Arduino,
+  a CO₂ sensor, a particulate sensor, a little screen — every part found, ordered, and
+  tracked through the procurement pack, so we feel exactly what Clark and Harry will feel.</p>
 
   <hr class="rule">
 
-  <h2>The project, in four sentences</h2>
-  <p>We're building a free, open-source <strong>Claude extension pack for hardware
-  procurement</strong> — your two skills (context-aware part search, Gmail order tracking)
-  on top of a shared parts database, modeled on the gbrain/gstack playbook: no app, no UI,
-  paste-one-prompt install, Claude is the interface. The free tool is the wedge; the
-  database is the asset — seeing what small hardware teams actually order is what tells
-  Westgate Supply what to stock and who to sell to. Long-term there's a third asset: the
-  commodity map — which parts actually work for which applications, provenance we're
-  already capturing per line item. Wedge market per the strategy sessions: robotics
-  startups under 10 people, fasteners/off-the-shelf parts, instead of McMaster.</p>
+  <h2>The build</h2>
+  <p>A small open-frame gadget that sits on a desk and shows live air quality: an Arduino
+  reads a <strong>real NDIR CO₂ sensor</strong> and a <strong>laser PM2.5 particulate
+  sensor</strong> and paints the numbers on a 0.96" OLED. One USB-C cable powers everything.
+  No soldering where we can avoid it (I²C/Qwiic chaining), no 3D-printed parts, ~$100-ish
+  budget, US vendors, fast shipping.</p>
+  <p>Remember why we picked something this small: the point isn't the gadget, it's
+  <strong>generating real procurement</strong> — real multi-vendor orders, real confirmation
+  emails hitting Gmail, and ideally at least one part that fails so the diagnose flow earns
+  its keep. Build it, break it, fix it — all through the pack.</p>
 
-  <h2>What shipped this weekend</h2>
+  <h2>Where the BOM stands</h2>
+  <p>The project lives in our shared database as <code>desk-air-quality-monitor-v1</code>,
+  with 4 specs stored (USB-C power only · I²C/solderless preferred · real-MPN sensors only ·
+  budget/shipping constraints). Sourcing so far:</p>
   <div class="table-wrap"><table>
-    <tr><th>Piece</th><th>Status</th><th>Notes</th></tr>
-    <tr><td><code>bomdb</code> — the MCP database server from your STEAL.md recipe</td>
-      <td class="done">Built</td>
-      <td>11 operations, contract-first registry, forward-only status guard, bom.json
-      export/import matching your store protocol exactly. 28/28 tests. Every task
-      spec-reviewed + quality-reviewed.</td></tr>
-    <tr><td>Hosted shared database</td><td class="done">Live</td>
-      <td>Supabase Postgres (dedicated project), REST surface locked with RLS —
-      the raw connection bomdb uses is the only way in. Local mode (PGLite, zero-config)
-      still works for solo users; <code>DATABASE_URL</code> is the only difference.</td></tr>
-    <tr><td>SCHEMA.md</td><td class="done">Locked</td>
-      <td>Your four open questions resolved + provenance columns added
-      (<code>chosen_because</code>, <code>outcome</code>). All additive — your skills'
-      output formats unchanged. <strong>Your ack requested</strong> — see the bottom of the file.</td></tr>
-    <tr><td>Eshan's machines</td><td class="done">Connected</td>
-      <td>Claude Code + Desktop both wired to the shared DB; skills saved to account.</td></tr>
-    <tr><td>First real project</td><td class="done">In the DB</td>
-      <td><code>desk-air-quality-monitor-v1</code> — set up entirely through conversation,
-      4 specs stored, a Sensirion SCD-41 already on the BOM (found by your part-search
-      flow, datasheet-verified, address-collision-checked against the OLED).</td></tr>
-    <tr><td>Email-extraction smoke test</td><td class="done">Passed</td>
-      <td>Real inbox samples (Wayfair, IKEA): order #, items, prices all extractable from
-      plaintext. Worth spot-checking McMaster/Digi-Key on your inbox.</td></tr>
-    <tr><td>Install-doc fixes from a real first-time run</td><td class="done">Pushed</td>
-      <td>Cloud-vs-local session honesty, bomdb-first store resolution, and the
-      Save-skill step made a hard checkpoint (it silently failed for our first user — Eshan).</td></tr>
-    <tr><td>Scheduled-task smoke test (your checklist test 4)</td><td class="open">Open</td>
-      <td>Decides overnight email sync vs catch-up-on-open.</td></tr>
-    <tr><td>Dashboard artifact skill</td><td class="open">Open</td>
-      <td>Next build item on Eshan's side.</td></tr>
+    <tr><th>Part</th><th>Status</th><th>Notes</th></tr>
+    <tr><td>Sensirion SCD-41 CO₂ sensor (Adafruit 5190)</td><td><span class="chip needed">needed · on BOM</span></td>
+      <td>$49.95 — genuine photoacoustic NDIR, STEMMA QT, address-collision-checked
+      against the OLED. Found by part-search against our stored specs.</td></tr>
+    <tr><td>PM2.5 sensor (PMS5003/7003-class)</td><td><span class="chip todo">to source</span></td>
+      <td>UART — that's what the good PM parts use. ~$25–45.</td></tr>
+    <tr><td>Dev board (USB-C, onboard 3.3V reg)</td><td><span class="chip todo">to source</span></td>
+      <td>~$15–25. Qwiic connector ideal.</td></tr>
+    <tr><td>0.96" SSD1306 OLED (I²C)</td><td><span class="chip todo">to source</span></td>
+      <td>~$10–18. Chains with the SCD-41 on one bus.</td></tr>
+    <tr><td>Cables, base plate, standoffs</td><td><span class="chip todo">to source</span></td>
+      <td>Open-frame v1 — PM sensor needs open airflow anyway.</td></tr>
   </table></div>
+  <p><strong>One open decision:</strong> honest total is tracking ~$120–140, not $100. The
+  spec says spend on the CO₂ sensor first if something has to give — so either we bless the
+  overage or hunt a cheaper PM sensor. Your call to weigh in on.</p>
 
-  <h2>Get started — two things, ~5 minutes</h2>
+  <h2>Get set up (~5 minutes, then it's just conversation)</h2>
 
   <div class="step">
     <div class="step-num">1</div>
     <div class="step-body">
-      <h3>Get the connection string from Eshan</h3>
-      <p>He's sending it privately (it's the database password — not in the repo, not in
-      this page). Have it ready to paste.</p>
+      <h3>Get the database connection string from Eshan</h3>
+      <p>Sent privately — it's the DB password, so it's not in the repo or on this page.</p>
     </div>
   </div>
 
@@ -148,59 +145,77 @@
     <div class="step-body">
       <h3>Open Claude Code in your terminal and paste this</h3>
       <div class="prompt-box">Fetch https://raw.githubusercontent.com/billenewman4/procurement-pack/main/TEAM_SETUP.md and follow it to set me up on the shared BOM database.</div>
-      <p>Your Claude does the rest: pulls the repo, installs bomdb, asks you for the
-      connection string, registers the server, <strong>proves the connection by showing you
-      the live projects</strong>, wires up your Claude Desktop config for you, installs the
-      skills, and walks you through the one click only you can do (saving the skills to
-      your account — don't skip it, it's the most-missed step).</p>
+      <p>Your Claude does everything: pulls the repo, installs the bomdb server, asks for the
+      connection string, proves the connection by showing you our live projects, wires your
+      Claude Desktop config for you, and installs the skills. One click only you can do:
+      <strong>saving the skills to your account when it offers</strong> — don't skip it
+      (it silently failed for our first user, who was Eshan).</p>
     </div>
   </div>
 
   <div class="step">
     <div class="step-num">3</div>
     <div class="step-body">
-      <h3>Fully quit and reopen Claude Desktop, then verify</h3>
-      <p>New <em>local</em> chat (cloud sessions can't see bomdb — it's a local server), and ask:</p>
-      <div class="prompt-box">What projects are in the bomdb database?</div>
-      <p>You should see the air-quality monitor with its specs and BOM. That's Eshan's
-      live data — same database, both machines.</p>
+      <h3>Restart Claude Desktop, then verify in a new local chat</h3>
+      <div class="prompt-box">What's on the BOM for the air-quality monitor?</div>
+      <p>You should see the specs and the SCD-41. That's the shared database — everything
+      either of us adds, the other sees instantly. (Cloud sessions can't see it — bomdb is
+      a local server. Local Desktop chats or Claude Code only.)</p>
     </div>
   </div>
 
   <div class="step">
     <div class="step-num">4</div>
     <div class="step-body">
-      <h3>Pick your lane</h3>
-      <p><strong>Join the air monitor</strong> — just talk about it: "what's still needed
-      on the air monitor BOM?" Everything you add, Eshan sees instantly, and vice versa.</p>
-      <p><strong>Or start your own build</strong> — paste, with your own project:</p>
-      <div class="prompt-box">I'm starting a new hardware project: [one line on what you're building]. Set it up in my BOM database — create the project, then interview me briefly for my specs (power, connectors, materials, constraints) and store each one. Keep it to one round of questions, then read the specs back to me.</div>
+      <h3>Start working on the build — no special syntax, just talk</h3>
+      <ul>
+        <li><em>"Find me the PM2.5 sensor for the air monitor"</em> — it loads our specs
+        first, verifies datasheets, offers to add to the BOM.</li>
+        <li><em>"What's still not sourced?"</em> · <em>"Order status?"</em> ·
+        <em>"Catch me up on my orders"</em> (sweeps your Gmail for confirmations and
+        updates the BOM).</li>
+        <li>When you order something, just buy it normally — the email sweep picks it up.</li>
+        <li>If a part turns out bad: say so — the outcome gets recorded on the line item.
+        That data is the long-game asset.</li>
+      </ul>
     </div>
   </div>
 
   <div class="callout">
-    <p><strong>Two honest caveats</strong> — also stated in TEAM_SETUP.md: (1) bomdb is a
-    locally-registered server, so cloud sessions (claude.ai, cloud Desktop containers)
-    can't reach it — work in Claude Code or local Desktop chats. (2) No per-user isolation
-    yet, by design: we both see and write everything, and concurrent edits to the same
-    line item are last-write-wins. Fine at two people; it's on the deferral list with a
-    trigger.</p>
+    <p><strong>Also on your plate when you get a minute:</strong> the schema contract got
+    locked Saturday (bottom of <code>SCHEMA.md</code> — four decisions, all additive, your
+    skills unchanged; ack or object there), and it'd be worth spot-checking McMaster/Digi-Key
+    order emails on your own inbox — extraction passed on Wayfair/IKEA samples but your
+    inbox has the vendors that matter.</p>
   </div>
 
-  <h2>What needs your eyes specifically</h2>
-  <ul>
-    <li><strong>Ack the schema lock</strong> — bottom of <code>SCHEMA.md</code>. Four
-    decisions, all additive or as-you-drafted; object there if any reads wrong.</li>
-    <li><strong>Spot-check vendor emails on your inbox</strong> — the extraction smoke
-    passed on Wayfair/IKEA; McMaster/Digi-Key/Amazon on a real order history is the
-    remaining sample gap.</li>
-    <li><strong>Your checklist's test 4</strong> (scheduled task → custom MCP) is the last
-    unanswered design question — it decides whether gmail-orders runs overnight or
-    catch-up-on-open.</li>
-  </ul>
+  <h2>Then: the pack itself still needs building</h2>
+  <p>Once you're set up and the build is moving, here's the dev backlog on the tool —
+  roughly in priority order:</p>
+  <div class="table-wrap"><table>
+    <tr><th>Item</th><th>What it is</th><th>Why now</th></tr>
+    <tr><td><strong>Dashboard / UI</strong></td>
+      <td>The artifact skill: "show me the BOM" renders a live-regenerated dashboard —
+      status chips, ETAs, budget vs. actual, stale orders. Probably the biggest UX gap
+      vs. what Clark/Harry expect.</td>
+      <td>We're about to have real multi-part order flow worth looking at.</td></tr>
+    <tr><td><strong>Email reader, running for real</strong></td>
+      <td>gmail-orders works on demand; the setup flow for it (scheduled task creation,
+      allowed-vendor learning, first-sweep experience) hasn't been productized.</td>
+      <td>Our own orders start arriving this week — perfect live test data.</td></tr>
+    <tr><td><strong>Scheduled-task smoke test</strong> (your checklist test 4)</td>
+      <td>Can a claude.ai scheduled task reach Gmail + a custom MCP headless? Decides
+      overnight auto-sync vs. catch-up-on-open — changes the skill, the install doc,
+      and the pitch.</td>
+      <td>10 minutes, and it's the last unanswered design question.</td></tr>
+    <tr><td>Smaller: project-setup skill</td>
+      <td>Freeze the "I'm starting a new project → interview → specs stored" flow into a
+      third skill so the magic prompt isn't needed.</td>
+      <td>The flow worked great in testing; worth locking in.</td></tr>
+  </table></div>
 
-  <p style="color: var(--muted); font-size: 13.5px; margin-top: 48px;">Deeper reading in
-  the repo: <code>docs/how-it-works.html</code> (full end-to-end explainer),
-  <code>docs/plans/2026-08-02-bomdb-mcp-server.md</code> (the build plan as executed),
-  <code>bomdb/README.md</code> (ops reference). — Eshan &amp; Claude</p>
+  <p style="color: var(--muted); font-size: 13.5px; margin-top: 48px;">Deeper reading in the
+  repo: <code>docs/how-it-works.html</code> (full end-to-end explainer) ·
+  <code>bomdb/README.md</code> (the database server you spec'd in STEAL.md — built, 28/28
+  tests) · <code>docs/plans/</code> (the build plan as executed). — Eshan &amp; Claude</p>
 </div>
