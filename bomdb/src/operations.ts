@@ -69,7 +69,7 @@ export const operations: Operation[] = [
   },
   {
     name: 'upsert_line_item',
-    description: 'Add a part to the BOM, or update it by id. New items default to status "needed". Fill chosen_because with which specs the part satisfies.',
+    description: 'Add a part to the BOM, or update it by id. New items default to status "needed". Status changes on existing items go through update_status, not here. Fill chosen_because with which specs the part satisfies.',
     params: {
       id: { type: 'string', description: 'Omit to create' },
       project_id: { type: 'string', required: true },
@@ -84,6 +84,9 @@ export const operations: Operation[] = [
     },
     handler: async (engine, p) => {
       if (p.id) {
+        if (p.status !== undefined && p.status !== null) {
+          return { error: 'status cannot be changed via upsert_line_item — use update_status' };
+        }
         const rows = await engine.query(
           `UPDATE line_items SET
              description = COALESCE($2, description), part_number = COALESCE($3, part_number),
@@ -92,10 +95,11 @@ export const operations: Operation[] = [
              source = COALESCE($8, source), ordered_at = COALESCE($9, ordered_at),
              eta = COALESCE($10, eta), notes = COALESCE($11, notes),
              chosen_because = COALESCE($12, chosen_because)
-           WHERE id = $1 RETURNING *`,
+           WHERE id = $1 AND project_id = $13 RETURNING *`,
           [p.id, p.description, p.part_number, p.vendor, p.product_url, p.qty,
-           p.unit_price, p.source, p.ordered_at, p.eta, p.notes, p.chosen_because]);
-        return rows[0] ?? { error: `line item ${p.id} not found` };
+           p.unit_price, p.source, p.ordered_at, p.eta, p.notes, p.chosen_because,
+           p.project_id]);
+        return rows[0] ?? { error: `line item ${p.id} not found in project ${p.project_id}` };
       }
       const rows = await engine.query(
         `INSERT INTO line_items
@@ -144,6 +148,69 @@ export const operations: Operation[] = [
          WHERE id = $1 RETURNING *`, [p.line_item_id, p.outcome, p.outcome_notes]);
       return rows[0] ?? { error: `line item ${p.line_item_id} not found` };
     },
+  },
+  {
+    name: 'record_order_event',
+    description: 'Append an order lifecycle event from an email (gmail-orders emits these). Auto-advances the matched line item when the event implies a forward move; never moves backward — anomalies come back flagged for the user. Unmatched events (no line_item_id) are kept for manual reconciliation.',
+    params: {
+      project_id: { type: 'string', required: true },
+      line_item_id: { type: 'string', description: 'Omit if unmatched' },
+      vendor: { type: 'string', required: true },
+      order_number: { type: 'string' },
+      event: { type: 'string', enum: ['confirmed', 'shipped', 'delivered', 'backordered', 'issue'], required: true },
+      event_at: { type: 'string', description: 'ISO timestamp from the email', required: true },
+      tracking_url: { type: 'string' },
+      email_ref: { type: 'string', description: 'Gmail message id' },
+      raw_summary: { type: 'string', description: 'One line. Never full bodies.', required: true },
+    },
+    handler: async (engine, p) => {
+      const [ev] = await engine.query(
+        `INSERT INTO order_events (line_item_id, project_id, vendor, order_number, event, event_at, tracking_url, email_ref, raw_summary)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+        [p.line_item_id ?? null, p.project_id, p.vendor, p.order_number ?? null,
+         p.event, p.event_at, p.tracking_url ?? null, p.email_ref ?? null, p.raw_summary]);
+      let line_item_status: string | null = null;
+      let flag: string | undefined;
+      if (p.line_item_id) {
+        const [li] = await engine.query<{ status: string }>(
+          `SELECT status FROM line_items WHERE id = $1`, [p.line_item_id]);
+        if (li) {
+          const implied = eventToStatus(p.event as string);
+          if (implied && isForwardMove(li.status, implied)) {
+            const [updated] = await engine.query<{ status: string }>(
+              `UPDATE line_items SET status = $2 WHERE id = $1 RETURNING status`,
+              [p.line_item_id, implied]);
+            line_item_status = updated.status;
+          } else {
+            line_item_status = li.status;
+            if (implied !== li.status) {
+              flag = `event "${p.event}" does not forward-advance item in status "${li.status}" — surface to the user`;
+            }
+          }
+        }
+      }
+      return { ...(ev as object), line_item_status, ...(flag ? { flag } : {}) };
+    },
+  },
+  {
+    name: 'stale_orders',
+    description: 'Line items stuck in "ordered" with no order event in the last N days (default 7) — candidates for a vendor nudge.',
+    params: {
+      project_id: { type: 'string', description: 'Omit for all projects' },
+      days: { type: 'number' },
+    },
+    handler: (engine, p) => engine.query(
+      `SELECT li.*, p.name AS project_name,
+              (SELECT max(oe.event_at) FROM order_events oe WHERE oe.line_item_id = li.id) AS last_event_at
+       FROM line_items li JOIN projects p ON p.id = li.project_id
+       WHERE li.status = 'ordered'
+         AND ($1::uuid IS NULL OR li.project_id = $1)
+         AND COALESCE(
+               (SELECT max(oe.event_at) FROM order_events oe WHERE oe.line_item_id = li.id),
+               li.ordered_at, now() - interval '100 years')
+             < now() - make_interval(days => COALESCE($2::int, 7))
+       ORDER BY li.ordered_at`,
+      [p.project_id ?? null, p.days ?? null]),
   },
 ];
 
