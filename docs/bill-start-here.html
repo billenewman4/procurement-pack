@@ -1,0 +1,206 @@
+<title>Procurement Pack — Bill: Start Here</title>
+<style>
+  :root {
+    --ground: #f4f6f5; --surface: #ffffff; --ink: #1f262b; --muted: #5c6871;
+    --line: #dde3e1; --accent: #1d5f8a; --accent-ink: #ffffff; --accent-soft: #e3edf4;
+    --code-bg: #eef1f0; --ok: #2e7d4f; --ok-soft: #e2f0e8; --warn: #9a6b0a; --warn-soft: #f6ecd4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #14181b; --surface: #1c2226; --ink: #e3e8ea; --muted: #97a3ab;
+      --line: #2d363c; --accent: #6fa8d0; --accent-ink: #10161a; --accent-soft: #1e3141;
+      --code-bg: #232b30; --ok: #66b98a; --ok-soft: #1d3327; --warn: #d8ab4e; --warn-soft: #37301c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #14181b; --surface: #1c2226; --ink: #e3e8ea; --muted: #97a3ab;
+    --line: #2d363c; --accent: #6fa8d0; --accent-ink: #10161a; --accent-soft: #1e3141;
+    --code-bg: #232b30; --ok: #66b98a; --ok-soft: #1d3327; --warn: #d8ab4e; --warn-soft: #37301c;
+  }
+  :root[data-theme="light"] {
+    --ground: #f4f6f5; --surface: #ffffff; --ink: #1f262b; --muted: #5c6871;
+    --line: #dde3e1; --accent: #1d5f8a; --accent-ink: #ffffff; --accent-soft: #e3edf4;
+    --code-bg: #eef1f0; --ok: #2e7d4f; --ok-soft: #e2f0e8; --warn: #9a6b0a; --warn-soft: #f6ecd4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6; margin: 0; font-size: 16px;
+  }
+  .page { max-width: 780px; margin: 0 auto; padding: 48px 24px 96px; }
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 12px;
+  }
+  h1 { font-size: 32px; line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.015em; text-wrap: balance; }
+  .subtitle { color: var(--muted); font-size: 17px; margin: 0; max-width: 620px; }
+  h2 { font-size: 21px; margin: 56px 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+  p { margin: 10px 0; }
+  a { color: var(--accent); }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.88em; }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  .rule { border: 0; border-top: 1px solid var(--line); margin: 44px 0; }
+
+  .prompt-box {
+    background: var(--code-bg); border-radius: 8px; padding: 14px 18px; margin: 12px 0;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px; overflow-x: auto; white-space: pre-wrap; line-height: 1.5;
+  }
+  .step { display: flex; gap: 16px; margin: 26px 0; }
+  .step-num {
+    flex: none; width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 14px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; margin-top: 2px;
+  }
+  .step-body { min-width: 0; }
+  .step-body h3 { margin: 3px 0 6px; font-size: 16.5px; }
+
+  .table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 14px; }
+  th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  th {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500; background: var(--ground);
+  }
+  .done { color: var(--ok); font-weight: 600; }
+  .open { color: var(--warn); font-weight: 600; }
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    border-radius: 0 8px 8px 0; padding: 12px 18px; margin: 18px 0; font-size: 14.5px;
+  }
+  .callout p { margin: 6px 0; }
+  ul { margin: 8px 0; padding-left: 22px; }
+  li { margin: 5px 0; }
+</style>
+
+<div class="page">
+  <p class="eyebrow">Procurement Pack · team handoff · Aug 2026</p>
+  <h1>Bill — the shared database is live. Here's everything.</h1>
+  <p class="subtitle">What we're building, what shipped this weekend, and your 5-minute
+  path onto the shared BOM database.</p>
+
+  <hr class="rule">
+
+  <h2>The project, in four sentences</h2>
+  <p>We're building a free, open-source <strong>Claude extension pack for hardware
+  procurement</strong> — your two skills (context-aware part search, Gmail order tracking)
+  on top of a shared parts database, modeled on the gbrain/gstack playbook: no app, no UI,
+  paste-one-prompt install, Claude is the interface. The free tool is the wedge; the
+  database is the asset — seeing what small hardware teams actually order is what tells
+  Westgate Supply what to stock and who to sell to. Long-term there's a third asset: the
+  commodity map — which parts actually work for which applications, provenance we're
+  already capturing per line item. Wedge market per the strategy sessions: robotics
+  startups under 10 people, fasteners/off-the-shelf parts, instead of McMaster.</p>
+
+  <h2>What shipped this weekend</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Piece</th><th>Status</th><th>Notes</th></tr>
+    <tr><td><code>bomdb</code> — the MCP database server from your STEAL.md recipe</td>
+      <td class="done">Built</td>
+      <td>11 operations, contract-first registry, forward-only status guard, bom.json
+      export/import matching your store protocol exactly. 28/28 tests. Every task
+      spec-reviewed + quality-reviewed.</td></tr>
+    <tr><td>Hosted shared database</td><td class="done">Live</td>
+      <td>Supabase Postgres (dedicated project), REST surface locked with RLS —
+      the raw connection bomdb uses is the only way in. Local mode (PGLite, zero-config)
+      still works for solo users; <code>DATABASE_URL</code> is the only difference.</td></tr>
+    <tr><td>SCHEMA.md</td><td class="done">Locked</td>
+      <td>Your four open questions resolved + provenance columns added
+      (<code>chosen_because</code>, <code>outcome</code>). All additive — your skills'
+      output formats unchanged. <strong>Your ack requested</strong> — see the bottom of the file.</td></tr>
+    <tr><td>Eshan's machines</td><td class="done">Connected</td>
+      <td>Claude Code + Desktop both wired to the shared DB; skills saved to account.</td></tr>
+    <tr><td>First real project</td><td class="done">In the DB</td>
+      <td><code>desk-air-quality-monitor-v1</code> — set up entirely through conversation,
+      4 specs stored, a Sensirion SCD-41 already on the BOM (found by your part-search
+      flow, datasheet-verified, address-collision-checked against the OLED).</td></tr>
+    <tr><td>Email-extraction smoke test</td><td class="done">Passed</td>
+      <td>Real inbox samples (Wayfair, IKEA): order #, items, prices all extractable from
+      plaintext. Worth spot-checking McMaster/Digi-Key on your inbox.</td></tr>
+    <tr><td>Install-doc fixes from a real first-time run</td><td class="done">Pushed</td>
+      <td>Cloud-vs-local session honesty, bomdb-first store resolution, and the
+      Save-skill step made a hard checkpoint (it silently failed for our first user — Eshan).</td></tr>
+    <tr><td>Scheduled-task smoke test (your checklist test 4)</td><td class="open">Open</td>
+      <td>Decides overnight email sync vs catch-up-on-open.</td></tr>
+    <tr><td>Dashboard artifact skill</td><td class="open">Open</td>
+      <td>Next build item on Eshan's side.</td></tr>
+  </table></div>
+
+  <h2>Get started — two things, ~5 minutes</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h3>Get the connection string from Eshan</h3>
+      <p>He's sending it privately (it's the database password — not in the repo, not in
+      this page). Have it ready to paste.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h3>Open Claude Code in your terminal and paste this</h3>
+      <div class="prompt-box">Fetch https://raw.githubusercontent.com/billenewman4/procurement-pack/main/TEAM_SETUP.md and follow it to set me up on the shared BOM database.</div>
+      <p>Your Claude does the rest: pulls the repo, installs bomdb, asks you for the
+      connection string, registers the server, <strong>proves the connection by showing you
+      the live projects</strong>, wires up your Claude Desktop config for you, installs the
+      skills, and walks you through the one click only you can do (saving the skills to
+      your account — don't skip it, it's the most-missed step).</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h3>Fully quit and reopen Claude Desktop, then verify</h3>
+      <p>New <em>local</em> chat (cloud sessions can't see bomdb — it's a local server), and ask:</p>
+      <div class="prompt-box">What projects are in the bomdb database?</div>
+      <p>You should see the air-quality monitor with its specs and BOM. That's Eshan's
+      live data — same database, both machines.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h3>Pick your lane</h3>
+      <p><strong>Join the air monitor</strong> — just talk about it: "what's still needed
+      on the air monitor BOM?" Everything you add, Eshan sees instantly, and vice versa.</p>
+      <p><strong>Or start your own build</strong> — paste, with your own project:</p>
+      <div class="prompt-box">I'm starting a new hardware project: [one line on what you're building]. Set it up in my BOM database — create the project, then interview me briefly for my specs (power, connectors, materials, constraints) and store each one. Keep it to one round of questions, then read the specs back to me.</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p><strong>Two honest caveats</strong> — also stated in TEAM_SETUP.md: (1) bomdb is a
+    locally-registered server, so cloud sessions (claude.ai, cloud Desktop containers)
+    can't reach it — work in Claude Code or local Desktop chats. (2) No per-user isolation
+    yet, by design: we both see and write everything, and concurrent edits to the same
+    line item are last-write-wins. Fine at two people; it's on the deferral list with a
+    trigger.</p>
+  </div>
+
+  <h2>What needs your eyes specifically</h2>
+  <ul>
+    <li><strong>Ack the schema lock</strong> — bottom of <code>SCHEMA.md</code>. Four
+    decisions, all additive or as-you-drafted; object there if any reads wrong.</li>
+    <li><strong>Spot-check vendor emails on your inbox</strong> — the extraction smoke
+    passed on Wayfair/IKEA; McMaster/Digi-Key/Amazon on a real order history is the
+    remaining sample gap.</li>
+    <li><strong>Your checklist's test 4</strong> (scheduled task → custom MCP) is the last
+    unanswered design question — it decides whether gmail-orders runs overnight or
+    catch-up-on-open.</li>
+  </ul>
+
+  <p style="color: var(--muted); font-size: 13.5px; margin-top: 48px;">Deeper reading in
+  the repo: <code>docs/how-it-works.html</code> (full end-to-end explainer),
+  <code>docs/plans/2026-08-02-bomdb-mcp-server.md</code> (the build plan as executed),
+  <code>bomdb/README.md</code> (ops reference). — Eshan &amp; Claude</p>
+</div>
