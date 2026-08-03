@@ -112,12 +112,36 @@ ln -sfn ~/procurement-pack/skills/gmail-orders ~/.claude/skills/gmail-orders
 ls ~/.claude/skills/part-search/SKILL.md ~/.claude/skills/gmail-orders/SKILL.md
 ```
 
-Both paths must print. This one command covers both the terminal and the
-Desktop app, so it needs no explanation and no decision from the user — say
-"part search and order tracking are installed" and move on. Do NOT offer to
-package these as .skill cards or raise account-saved skills; it is a
-different surface than the one they're being set up on and it only adds a
-choice they have no basis to make.
+Both paths must print. This covers the terminal and the Desktop app's coding
+surface — say "part search and order tracking are installed" and continue.
+
+## Step 5.5 — Make the skills reach Cowork chats
+
+The symlinks above do NOT reach Cowork: Cowork sessions run sandboxed and
+don't read the machine's `~/.claude/skills`. If the user will work in Cowork
+(ask only if they mention it, or they've asked where the skills are), give
+them the account-saved path — it makes the skills available in Cowork, web,
+and Desktop chats alike:
+
+1. Tell them: "One click makes these available everywhere you use Claude,
+   not just this computer." Then guide them to save both skills to their
+   Claude account — via Claude's skills/capabilities settings (upload), or
+   by having a claude.ai chat package the two folders under
+   `~/procurement-pack/skills/` as saveable skill cards and clicking **Save**
+   on each. The click is theirs; never claim it's done until they confirm.
+2. Remind them: skills load at session start — a Cowork chat opened before
+   the save won't see them; start a fresh one.
+
+TO VERIFY (maintainers, not users): whether Cowork honors
+`<workspace-folder>/.claude/skills/` like Claude Code project skills. If yes,
+a zero-click alternative is dropping the skills into the folder the user
+opens Cowork on — test it and replace this note with the instruction.
+
+Known gap, state honestly if the user asks: the database (bomdb) may not be
+reachable from Cowork sessions even once skills are — the server registered
+in Steps 3–4 serves the terminal and Desktop chats. If their Cowork search
+can't reach the BOM, that's expected for now; the hosted-connector work
+tracks the fix.
 
 ## Step 6 — Create their first project
 
