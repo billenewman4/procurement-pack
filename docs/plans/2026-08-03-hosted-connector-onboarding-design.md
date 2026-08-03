@@ -294,6 +294,19 @@ record_order_event, reports. First weekday-8am run will confirm.
 redeploy → `reset-user.ts testnoob` → re-onboard in a fresh chat.
 Minutes per cycle.
 
+**Incident found by the dashboard (2026-08-03 evening): Eshan's token
+mapped to the MASTER connection.** His multi-project dashboard rendered
+testnoob's project alongside his own — master bypasses RLS, and his
+Phase 1 token had been wired to the master DATABASE_URL from bomdb/.env
+(the same string his original local setup used). Latent until a second
+user existed. Fix, same hour: reset the pre-existing `eshan` scoped role
+with a fresh password, claimed his 3 owner-created projects
+(`user_id IS NULL` → his users row), remapped his token to the scoped
+pooler string, redeployed (rev 00005). Verified by curl: each token now
+sees exactly its own projects. RULE ESTABLISHED: no user token ever maps
+to the master connection — master is for admin scripts (provision-user,
+reset-user) only.
+
 **Remaining from the original design:** Phase 5 docs flip (README
 two-line card, TEAM_SETUP demoted, baton sections retired), Bill's
 onboarding as first true stranger, Phase 2 OAuth when stranger-scale
