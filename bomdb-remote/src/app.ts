@@ -6,6 +6,7 @@ import type { Engine } from '../../bomdb/src/engine.ts';
 import { operations, runOp } from '../../bomdb/src/operations.ts';
 import { buildToolDefs } from '../../bomdb/src/tool-defs.ts';
 import { GET_STARTED_TOOL, getStartedText, EMPTY_WORKSPACE_HINT } from './concierge.ts';
+import { SOURCING_TOOLS, isSourcingTool, callSourcing, sourcingUrl } from './sourcing.ts';
 
 const PING_TOOL = {
   name: 'ping',
@@ -19,7 +20,12 @@ function buildServer(engine: Engine) {
     { capabilities: { tools: {} } },
   );
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: [...buildToolDefs(operations), GET_STARTED_TOOL, PING_TOOL],
+    tools: [
+      ...buildToolDefs(operations),
+      GET_STARTED_TOOL,
+      PING_TOOL,
+      ...(sourcingUrl() ? SOURCING_TOOLS : []),
+    ],
   }));
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: params } = request.params;
@@ -33,6 +39,9 @@ function buildServer(engine: Engine) {
     }
     if (name === 'get_started') {
       return { content: [{ type: 'text' as const, text: await getStartedText(engine) }] };
+    }
+    if (isSourcingTool(name)) {
+      return callSourcing(name, (params ?? {}) as Record<string, unknown>);
     }
     const result = await runOp(engine, name, (params ?? {}) as Record<string, unknown>);
     const isError = typeof result === 'object' && result !== null && 'error' in result;
