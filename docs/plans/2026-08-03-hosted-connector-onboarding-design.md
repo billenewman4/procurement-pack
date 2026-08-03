@@ -253,3 +253,48 @@ new token + redeploy + user edits URL. Fine at known-team scale; OAuth
 user (runbook above), then Phase 3 concierge (`get_started`, "set up my
 BOM", skill hand-off) — OAuth (Phase 2) can slot in after the concierge
 since the team V1 doesn't need it.
+
+## Phase 3+4 results (2026-08-03, same day)
+
+Shipped: `get_dashboard_data` (shared op), the `get_started` concierge +
+empty-workspace hint (hosted), the `bom-dashboard` skill (validated
+ordinal ramp + reserved status colors), `reset-user.ts` (admin wipe for
+onboarding re-tests), and a `testnoob` scoped user + second token as the
+standing fresh-user simulator. Revision `bomdb-remote-00004-4lv`.
+
+**Live onboarding runs (Eshan as testnoob), and what they taught:**
+1. Run 1: "set up my BOM" → welcome, project, spec interview (nice
+   multiple-choice UI), Gmail auto-verified, digest offered, usage
+   teaching — all conversational, no docs. BUG FOUND: Claude skipped
+   packaging the missing bom-dashboard skill ("isn't in your catalog yet,
+   so I'll leave that for now"). Concierge script didn't cover the
+   partially-saved state → fixed same hour: active skills skip silently,
+   missing ones ALWAYS get fetched + packaged. Verified in run 3.
+2. Run 2 (after reset-user wipe): claude.ai's cross-chat MEMORY leaked
+   the previous run's answers — Claude re-created the project from memory
+   instead of interviewing. Note: DB writes were still real and correctly
+   scoped; for honest stranger tests use a temporary/incognito chat or a
+   separate account. For real users this layering (memory + DB ground
+   truth) is actually good UX.
+3. Run 3: skill hand-off worked ("One upgrade is available… want it?" →
+   save card on yes, "takes effect next chat").
+
+**Dashboard artifact: verified against the skill spec** (screenshots in
+chat, Aug 3 8:31 PM snapshot): stat tiles with DB-computed numbers
+(committed correctly counts ordered+ only), proportional pipeline bar in
+the validated ordinal blues with chip+ink labels (never color alone),
+lifecycle-grouped table, honest empty recent-activity. Not yet observed:
+dark mode, issue/stale callouts (render only when nonempty).
+
+**Still pending (first live fire):** the morning digest scheduled task —
+self-contained prompt (no skill dependency), writes through
+record_order_event, reports. First weekday-8am run will confirm.
+
+**Iteration loop achieved (the session's goal):** tweak concierge.ts →
+redeploy → `reset-user.ts testnoob` → re-onboard in a fresh chat.
+Minutes per cycle.
+
+**Remaining from the original design:** Phase 5 docs flip (README
+two-line card, TEAM_SETUP demoted, baton sections retired), Bill's
+onboarding as first true stranger, Phase 2 OAuth when stranger-scale
+self-serve matters, connector naming decision.
