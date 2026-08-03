@@ -40,7 +40,10 @@ function buildServer(engine: Engine) {
   return server;
 }
 
-export function buildApp(engine: Engine, token: string) {
+/** Maps a URL token to that user's engine; null → 401. */
+export type EngineResolver = (token: string) => Promise<Engine | null>;
+
+export function buildApp(resolveEngine: EngineResolver) {
   const app = express();
   app.use(express.json());
 
@@ -48,7 +51,11 @@ export function buildApp(engine: Engine, token: string) {
   app.get('/health', (_req, res) => { res.status(200).send('ok'); });
 
   app.post('/mcp/:token', async (req, res) => {
-    if (req.params.token !== token) {
+    const engine = await resolveEngine(req.params.token).catch(err => {
+      console.error('engine resolution failed:', err);
+      return null;
+    });
+    if (!engine) {
       res.status(401).json({ jsonrpc: '2.0', error: { code: -32001, message: 'unauthorized' }, id: null });
       return;
     }

@@ -5,13 +5,17 @@ import { createTestEngine, type Engine } from '../../bomdb/src/engine.ts';
 import { buildApp } from '../src/app.ts';
 
 const TOKEN = 'test-token-123';
+const TOKEN_B = 'test-token-456';
 let engine: Engine;
+let engineB: Engine;
 let base: string;
 let server: HttpServer;
 
 before(async () => {
   engine = await createTestEngine();
-  const app = buildApp(engine, TOKEN);
+  engineB = await createTestEngine();
+  const engines: Record<string, Engine> = { [TOKEN]: engine, [TOKEN_B]: engineB };
+  const app = buildApp(async token => engines[token] ?? null);
   server = app.listen(0);
   const addr = server.address();
   base = `http://127.0.0.1:${typeof addr === 'object' && addr ? addr.port : 0}`;
@@ -20,6 +24,7 @@ before(async () => {
 after(async () => {
   server.close();
   await engine.close();
+  await engineB.close();
 });
 
 async function rpc(path: string, body: object) {
@@ -76,4 +81,18 @@ test('create_project then list_projects round-trips through HTTP', async () => {
   });
   const msg = parseSse(await list.text());
   assert.ok(msg.result.content[0].text.includes('HTTP transport test'));
+});
+
+test('tokens are isolated: token B cannot see token A projects', async () => {
+  await rpc(`/mcp/${TOKEN}`, {
+    jsonrpc: '2.0', id: 5, method: 'tools/call',
+    params: { name: 'create_project', arguments: { name: 'private-to-A' } },
+  });
+  const listB = await rpc(`/mcp/${TOKEN_B}`, {
+    jsonrpc: '2.0', id: 6, method: 'tools/call',
+    params: { name: 'list_projects', arguments: {} },
+  });
+  const msg = parseSse(await listB.text());
+  assert.ok(!msg.result.content[0].text.includes('private-to-A'),
+    'token B saw token A data');
 });

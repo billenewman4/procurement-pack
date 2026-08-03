@@ -41,11 +41,12 @@ function pgliteEngine(db: PGlite): Engine {
 }
 
 /**
- * DATABASE_URL always wins. Otherwise PGLite in BOMDB_DATA_DIR
+ * DATABASE_URL always wins (explicit arg beats env — the hosted multi-user
+ * server passes each user's own URL). Otherwise PGLite in BOMDB_DATA_DIR
  * (default ~/.bomdb/data) — a real Postgres, no server.
  */
-export async function createEngine(): Promise<Engine> {
-  const url = process.env.DATABASE_URL;
+export async function createEngine(urlOverride?: string): Promise<Engine> {
+  const url = urlOverride ?? process.env.DATABASE_URL;
   if (url) {
     const postgres = (await import('postgres')).default;
     const sql = postgres(url, { onnotice: () => {} });
