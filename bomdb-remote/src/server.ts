@@ -21,7 +21,8 @@ function buildServer() {
 const app = express();
 app.use(express.json());
 
-app.get('/healthz', (_req, res) => { res.status(200).send('ok'); });
+// NOTE: /healthz is reserved/intercepted by Google's frontend on run.app — use /health.
+app.get('/health', (_req, res) => { res.status(200).send('ok'); });
 
 app.post('/mcp', async (req, res) => {
   const server = buildServer();
