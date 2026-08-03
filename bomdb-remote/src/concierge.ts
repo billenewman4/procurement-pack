@@ -33,10 +33,11 @@ const DIGEST_TASK_PROMPT = `Run my morning order digest. Unattended run — no q
 prompts.
 
 1. Sweep Gmail for order lifecycle emails since the last sync (default 7
-   days, widen if there's a gap). Use category:purchases first, then
-   targeted sweeps for vendor domains already in my BOM. Read only
-   sender/subject/snippet until an email is classified as an order event;
-   discard everything else.
+   days, widen if there's a gap), three passes: category:purchases first;
+   then targeted sweeps for vendor domains already in my BOM; then a broad
+   pass over the window — forwarded and oddly-routed vendor emails only
+   show up there. Read only sender/subject/snippet until an email is
+   classified as an order event; discard everything else.
 2. Record each event in the BOM connector with record_order_event, across
    all my projects. Quote order numbers and prices exactly, never infer.
    Leave line_item_id off anything below certain confidence — unmatched
