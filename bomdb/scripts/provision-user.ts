@@ -4,6 +4,7 @@
 // Roles get SELECT/INSERT/UPDATE only (no DELETE), and RLS scopes every row.
 import { randomBytes } from 'node:crypto';
 import { createEngine } from '../src/engine.ts';
+import { connectionUrls } from './provision-lib.ts';
 
 const [role, name, email] = process.argv.slice(2);
 if (!role || !name || !email || !/^[a-z][a-z0-9_]{1,30}$/.test(role)) {
@@ -31,9 +32,10 @@ await engine.query(
   [name, email, role]);
 await engine.close();
 
-const url = new URL(masterUrl);
-url.username = role;
-url.password = password;
+const { direct, pooler } = connectionUrls(masterUrl, role, password);
 console.log(`Provisioned "${name}" <${email}> as role "${role}".`);
-console.log(`Their connection string (send PRIVATELY, never commit):`);
-console.log(url.toString());
+console.log(`Their connection strings (send PRIVATELY, never commit):`);
+console.log(`  direct (IPv6 networks): ${direct}`);
+if (pooler) {
+  console.log(`  pooler (IPv4 — use for Cloud Run TOKEN_MAP and most home networks): ${pooler}`);
+}
