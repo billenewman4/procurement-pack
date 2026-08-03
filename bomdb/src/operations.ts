@@ -227,6 +227,52 @@ export const operations: Operation[] = [
       [p.project_id ?? null, p.days ?? null]),
   },
   {
+    name: 'get_dashboard_data',
+    description: 'Aggregated BOM dashboard data: per-project status counts, committed spend, spec coverage, open issues, stale ordered items, recent order events. Call this before rendering a BOM dashboard or status overview.',
+    params: { project_id: { type: 'string', description: 'Omit for all projects' } },
+    handler: async (engine, p) => {
+      const projects = await engine.query<{ id: string; name: string; created_at: string }>(
+        `SELECT id, name, created_at FROM projects
+         WHERE ($1::uuid IS NULL OR id = $1) ORDER BY created_at`,
+        [p.project_id ?? null]);
+      const out = [];
+      for (const proj of projects) {
+        const specs = await engine.query<{ category: string }>(
+          `SELECT category FROM project_specs WHERE project_id = $1 ORDER BY category`, [proj.id]);
+        const counts = await engine.query<{ status: string; n: number }>(
+          `SELECT status, count(*)::int AS n FROM line_items WHERE project_id = $1 GROUP BY status`, [proj.id]);
+        const [{ committed }] = await engine.query<{ committed: number }>(
+          `SELECT COALESCE(sum(qty * unit_price), 0)::float AS committed
+           FROM line_items WHERE project_id = $1 AND status IN ('ordered','shipped','delivered')`, [proj.id]);
+        const stale = await engine.query(
+          `SELECT li.id, li.description, li.vendor, li.ordered_at,
+                  (SELECT max(oe.event_at) FROM order_events oe WHERE oe.line_item_id = li.id) AS last_event_at
+           FROM line_items li
+           WHERE li.project_id = $1 AND li.status = 'ordered'
+             AND COALESCE(
+                   (SELECT max(oe.event_at) FROM order_events oe WHERE oe.line_item_id = li.id),
+                   li.ordered_at, now() - interval '100 years')
+                 < now() - interval '7 days'
+           ORDER BY li.ordered_at`, [proj.id]);
+        const recent_events = await engine.query(
+          `SELECT event, vendor, order_number, event_at, raw_summary
+           FROM order_events WHERE project_id = $1 ORDER BY event_at DESC LIMIT 5`, [proj.id]);
+        out.push({
+          id: proj.id,
+          name: proj.name,
+          created_at: proj.created_at,
+          spec_categories: specs.map(s => s.category),
+          status_counts: Object.fromEntries(counts.map(c => [c.status, c.n])),
+          total_committed: Number(committed),
+          open_issues: counts.find(c => c.status === 'issue')?.n ?? 0,
+          stale_items: stale,
+          recent_events,
+        });
+      }
+      return { projects: out };
+    },
+  },
+  {
     name: 'export_json',
     description: 'Export a project in the bom.json interchange shape (store/README.md). last_email_sync is derived from max(order_events.event_at).',
     params: { project_id: { type: 'string', required: true } },
