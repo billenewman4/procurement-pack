@@ -115,33 +115,36 @@ ls ~/.claude/skills/part-search/SKILL.md ~/.claude/skills/gmail-orders/SKILL.md
 Both paths must print. This covers the terminal and the Desktop app's coding
 surface — say "part search and order tracking are installed" and continue.
 
-## Step 5.5 — Make the skills reach Cowork chats
+## Step 5.5 — Hand them the Cowork/claude.ai baton
 
-The symlinks above do NOT reach Cowork: Cowork sessions run sandboxed and
-don't read the machine's `~/.claude/skills`. If the user will work in Cowork
-(ask only if they mention it, or they've asked where the skills are), give
-them the account-saved path — it makes the skills available in Cowork, web,
-and Desktop chats alike:
+The symlinks above do NOT reach Cowork or claude.ai chats — those run
+sandboxed and don't read this machine's `~/.claude/skills`. Skills reach
+them by being **saved to the user's Claude account**, and the account side
+can't be done from this terminal. So setup ends by handing the user a baton
+prompt that makes their Cowork/claude.ai session do it itself.
 
-1. Tell them: "One click makes these available everywhere you use Claude,
-   not just this computer." Then guide them to save both skills to their
-   Claude account — via Claude's skills/capabilities settings (upload), or
-   by having a claude.ai chat package the two folders under
-   `~/procurement-pack/skills/` as saveable skill cards and clicking **Save**
-   on each. The click is theirs; never claim it's done until they confirm.
-2. Remind them: skills load at session start — a Cowork chat opened before
-   the save won't see them; start a fresh one.
+At the end of setup (fold into Step 7's handoff), tell them: "If you also
+use Claude in the Cowork app or at claude.ai — one more paste, one time,
+makes the skills follow your account everywhere. Open a chat there and
+paste this:"
 
-TO VERIFY (maintainers, not users): whether Cowork honors
-`<workspace-folder>/.claude/skills/` like Claude Code project skills. If yes,
-a zero-click alternative is dropping the skills into the folder the user
-opens Cowork on — test it and replace this note with the instruction.
+```
+Fetch these two files and package each one as a skill I can save to my
+account — then show me the save cards and do nothing else:
+https://raw.githubusercontent.com/billenewman4/procurement-pack/main/skills/part-search/SKILL.md
+https://raw.githubusercontent.com/billenewman4/procurement-pack/main/skills/gmail-orders/SKILL.md
+```
 
-Known gap, state honestly if the user asks: the database (bomdb) may not be
-reachable from Cowork sessions even once skills are — the server registered
-in Steps 3–4 serves the terminal and Desktop chats. If their Cowork search
-can't reach the BOM, that's expected for now; the hosted-connector work
-tracks the fix.
+Then, verbatim: "Click **Save** on both cards, then start a NEW chat —
+skills load at session start, so the chat where you saved them won't use
+them." The two Save clicks are the user's; never claim this step is done
+until they confirm.
+
+Known gap, state honestly if the user asks: the database (bomdb) is wired
+into this computer's terminal and Desktop app (Steps 3–4). Cowork/claude.ai
+sessions get the *skills* via the baton but may not reach the database —
+if their Cowork search can't see the BOM, that's expected for now; the
+hosted-connector work tracks the fix.
 
 ## Step 6 — Create their first project
 
