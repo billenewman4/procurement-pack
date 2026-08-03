@@ -83,6 +83,28 @@ test('create_project then list_projects round-trips through HTTP', async () => {
   assert.ok(msg.result.content[0].text.includes('HTTP transport test'));
 });
 
+test('get_started is listed and routes to the concierge', async () => {
+  const listRes = await rpc(`/mcp/${TOKEN_B}`, { jsonrpc: '2.0', id: 7, method: 'tools/list' });
+  const names = parseSse(await listRes.text()).result.tools.map((t: { name: string }) => t.name);
+  assert.ok(names.includes('get_started'), `missing get_started in ${names}`);
+  const call = await rpc(`/mcp/${TOKEN_B}`, {
+    jsonrpc: '2.0', id: 8, method: 'tools/call',
+    params: { name: 'get_started', arguments: {} },
+  });
+  const msg = parseSse(await call.text());
+  assert.match(msg.result.content[0].text, /NEW USER/);
+});
+
+test('empty list_projects carries an onboarding hint', async () => {
+  const res = await rpc(`/mcp/${TOKEN_B}`, {
+    jsonrpc: '2.0', id: 9, method: 'tools/call',
+    params: { name: 'list_projects', arguments: {} },
+  });
+  const msg = parseSse(await res.text());
+  const all = msg.result.content.map((c: { text: string }) => c.text).join('\n');
+  assert.match(all, /new user|get_started/i);
+});
+
 test('tokens are isolated: token B cannot see token A projects', async () => {
   await rpc(`/mcp/${TOKEN}`, {
     jsonrpc: '2.0', id: 5, method: 'tools/call',

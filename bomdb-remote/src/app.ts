@@ -5,6 +5,7 @@ import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprot
 import type { Engine } from '../../bomdb/src/engine.ts';
 import { operations, runOp } from '../../bomdb/src/operations.ts';
 import { buildToolDefs } from '../../bomdb/src/tool-defs.ts';
+import { GET_STARTED_TOOL, getStartedText, EMPTY_WORKSPACE_HINT } from './concierge.ts';
 
 const PING_TOOL = {
   name: 'ping',
@@ -18,7 +19,7 @@ function buildServer(engine: Engine) {
     { capabilities: { tools: {} } },
   );
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: [...buildToolDefs(operations), PING_TOOL],
+    tools: [...buildToolDefs(operations), GET_STARTED_TOOL, PING_TOOL],
   }));
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: params } = request.params;
@@ -30,12 +31,16 @@ function buildServer(engine: Engine) {
         }],
       };
     }
+    if (name === 'get_started') {
+      return { content: [{ type: 'text' as const, text: await getStartedText(engine) }] };
+    }
     const result = await runOp(engine, name, (params ?? {}) as Record<string, unknown>);
     const isError = typeof result === 'object' && result !== null && 'error' in result;
-    return {
-      content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-      ...(isError ? { isError: true } : {}),
-    };
+    const content = [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }];
+    if (name === 'list_projects' && Array.isArray(result) && result.length === 0) {
+      content.push({ type: 'text' as const, text: EMPTY_WORKSPACE_HINT });
+    }
+    return { content, ...(isError ? { isError: true } : {}) };
   });
   return server;
 }
