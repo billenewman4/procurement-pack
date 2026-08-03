@@ -13,8 +13,11 @@ credentials, so isolation is enforced by the database, not the router.
 
 - Service: `bomdb-remote`, GCP project `carbonella`, region `us-central1`
 - URL: `https://bomdb-remote-869731474645.us-central1.run.app`
-- Config: `env.yaml` (gitignored) — `TOKEN_MAP` JSON of `{token: database_url}`,
-  or single-user `TOKEN` + `DATABASE_URL`
+- Config: `env.yaml` (gitignored, local canonical copy) — `TOKEN_MAP` JSON
+  of `{token: database_url}` and optionally `SOURCING_AGENT_URL`. Shipped
+  to GCP **Secret Manager** (`bomdb-token-map`, `bomdb-sourcing-url`) by
+  `scripts/sync-secrets.sh`; Cloud Run mounts them as env vars via
+  `--set-secrets`.
 - All `database_url`s MUST be the Supabase **pooler** form
   (`<role>.<project-ref>@aws-0-us-west-1.pooler.supabase.com`) — Cloud Run
   egress is IPv4-only and the direct host is IPv6-only.
@@ -22,12 +25,17 @@ credentials, so isolation is enforced by the database, not the router.
 ## Deploy (from repo root; Eshan runs this)
 
 ```bash
+bomdb-remote/scripts/sync-secrets.sh   # if env.yaml changed
 gcloud run deploy bomdb-remote --source . --region us-central1 \
   --allow-unauthenticated --project carbonella \
-  --env-vars-file bomdb-remote/env.yaml --quiet
+  --clear-env-vars --set-secrets TOKEN_MAP=bomdb-token-map:latest \
+  --quiet
 ```
 
-`--allow-unauthenticated` is correct: auth is the secret URL path.
+Add `,SOURCING_AGENT_URL=bomdb-sourcing-url:latest` to `--set-secrets`
+once sourcing is activated. `--allow-unauthenticated` is correct: auth is
+the secret URL path. Secret rotation = edit env.yaml → sync-secrets.sh →
+redeploy.
 
 ## Onboard a teammate
 

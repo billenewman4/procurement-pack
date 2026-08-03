@@ -21,15 +21,20 @@ path the concierge now uses) is retired; the appendix keeps the essentials.
 
 2. **Mint their token:** `openssl rand -hex 24`
 
-3. **Add them to the token map:** in `bomdb-remote/env.yaml` (gitignored),
-   add `"<token>": "<their pooler string>"` to the `TOKEN_MAP` JSON, then
-   redeploy:
+3. **Add them to the token map:** in `bomdb-remote/env.yaml` (gitignored,
+   the local canonical copy), add `"<token>": "<their pooler string>"` to
+   the `TOKEN_MAP` JSON. Then push to Secret Manager and redeploy:
 
    ```bash
+   bomdb-remote/scripts/sync-secrets.sh
    gcloud run deploy bomdb-remote --source . --region us-central1 \
      --allow-unauthenticated --project carbonella \
-     --env-vars-file bomdb-remote/env.yaml --quiet
+     --clear-env-vars --set-secrets TOKEN_MAP=bomdb-token-map:latest \
+     --quiet
    ```
+
+   (Add `,SOURCING_AGENT_URL=bomdb-sourcing-url:latest` to `--set-secrets`
+   once that secret exists.)
 
 4. **Send them the card** (privately — the URL is their password):
 
