@@ -146,6 +146,25 @@ sessions get the *skills* via the baton but may not reach the database —
 if their Cowork search can't see the BOM, that's expected for now; the
 hosted-connector work tracks the fix.
 
+### Optional: the morning order digest (second baton)
+
+If the user wants order updates without asking: after they've saved the
+skills and connected Gmail, give them this second paste-once prompt for a
+claude.ai/Cowork chat:
+
+```
+Set up a scheduled task for me: every weekday at 8am, use the gmail-orders
+skill to sweep my email for order updates from my vendors and send me a
+short digest — what shipped, what's delayed, what's been silent too long.
+Report only; don't change any records.
+```
+
+Be honest about its limits, in these words: "The morning digest reads your
+email and reports. Your BOM itself updates the next time you open a chat
+and ask — the scheduled run can't reach your database yet." When the hosted
+connector ships, this same task becomes full sync — the prompt stays the
+same, the limitation line goes away.
+
 ## Step 6 — Create their first project
 
 [ASK] "What are you building? One line is plenty." Then create the project
