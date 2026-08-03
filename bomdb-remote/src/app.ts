@@ -1,0 +1,74 @@
+import express from 'express';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import type { Engine } from '../../bomdb/src/engine.ts';
+import { operations, runOp } from '../../bomdb/src/operations.ts';
+import { buildToolDefs } from '../../bomdb/src/tool-defs.ts';
+
+const PING_TOOL = {
+  name: 'ping',
+  description: 'Health check for the procurement BOM connector. Returns proof the hosted server answered.',
+  inputSchema: { type: 'object' as const, properties: {}, required: [] as string[] },
+};
+
+function buildServer(engine: Engine) {
+  const server = new Server(
+    { name: 'bomdb-remote', version: '0.1.0' },
+    { capabilities: { tools: {} } },
+  );
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: [...buildToolDefs(operations), PING_TOOL],
+  }));
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: params } = request.params;
+    if (name === 'ping') {
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `pong from bomdb-remote at ${new Date().toISOString()} (revision ${process.env.K_REVISION ?? 'local'})`,
+        }],
+      };
+    }
+    const result = await runOp(engine, name, (params ?? {}) as Record<string, unknown>);
+    const isError = typeof result === 'object' && result !== null && 'error' in result;
+    return {
+      content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      ...(isError ? { isError: true } : {}),
+    };
+  });
+  return server;
+}
+
+export function buildApp(engine: Engine, token: string) {
+  const app = express();
+  app.use(express.json());
+
+  // /healthz is reserved by Google's frontend on run.app — use /health.
+  app.get('/health', (_req, res) => { res.status(200).send('ok'); });
+
+  app.post('/mcp/:token', async (req, res) => {
+    if (req.params.token !== token) {
+      res.status(401).json({ jsonrpc: '2.0', error: { code: -32001, message: 'unauthorized' }, id: null });
+      return;
+    }
+    const server = buildServer(engine);
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    res.on('close', () => { void transport.close(); void server.close(); });
+    try {
+      await server.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+    } catch (err) {
+      console.error('mcp request failed:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ jsonrpc: '2.0', error: { code: -32603, message: 'internal error' }, id: null });
+      }
+    }
+  });
+
+  // Stateless: no standalone SSE stream, no sessions to close.
+  app.get('/mcp/:token', (_req, res) => { res.status(405).set('Allow', 'POST').send(); });
+  app.delete('/mcp/:token', (_req, res) => { res.status(405).set('Allow', 'POST').send(); });
+
+  return app;
+}
