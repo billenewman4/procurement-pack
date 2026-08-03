@@ -29,18 +29,22 @@ interface DashboardData {
 
 const SPEC_CATEGORIES = ['power', 'connectors', 'mechanical', 'constraints'];
 
-const DIGEST_TASK_PROMPT = `Every weekday at 8am: search my Gmail for emails from the last 3 days from
-hardware vendors (McMaster-Carr, Digi-Key, Mouser, Amazon, Adafruit,
-SparkFun, and any vendor that appears in my BOM) about orders — confirmations,
-shipping notices, delivery notices, backorders, problems. For each real order
-update: find the matching line item via the BOM DB connector's list_projects +
-get_project_context tools, then call record_order_event with the vendor,
-event type (confirmed/shipped/delivered/backordered/issue), the email's
-timestamp, order number and tracking link if present, and a one-line
-raw_summary. The tool auto-advances item statuses safely. Then send me a
-short digest: what shipped, what delivered, what's delayed or flagged, and
-anything that's been silent too long (use the stale_orders tool). If there
-are no updates, say so in one line.`;
+const DIGEST_TASK_PROMPT = `Run my morning order digest. Unattended run — no questions, no clarifying
+prompts.
+
+1. Sweep Gmail for order lifecycle emails since the last sync (default 7
+   days, widen if there's a gap). Use category:purchases first, then
+   targeted sweeps for vendor domains already in my BOM. Read only
+   sender/subject/snippet until an email is classified as an order event;
+   discard everything else.
+2. Record each event in the BOM connector with record_order_event, across
+   all my projects. Quote order numbers and prices exactly, never infer.
+   Leave line_item_id off anything below certain confidence — unmatched
+   events are kept for manual reconciliation.
+3. Report three short sections: UPDATED (item, old → new status, ETA),
+   UNMATCHED (events needing my call), STALE (ordered 7+ days with no
+   event — use the stale_orders tool; worth a vendor nudge).
+4. If nothing moved, say so in one line and stop.`;
 
 function newUserScript(): string {
   return `[bomdb concierge — NEW USER, empty workspace]
@@ -80,8 +84,13 @@ Don't use our internal words (MCP, connector, tool names) with them.
 
 5. MORNING DIGEST (only after Gmail works). Offer: "Want a weekday-morning
    order digest? I'll read your order emails, update your BOM, and send
-   you a summary." If yes, create a scheduled task with EXACTLY this
-   prompt:
+   you a summary." If yes: create a scheduled task (weekdays, 8am their
+   time) whose prompt is EXACTLY the text between the --- markers below.
+   If you cannot create scheduled tasks from this conversation, give them
+   that text verbatim instead and say: "Open Tasks → new task → paste
+   this → set it to weekday mornings." The task prompt must BE the digest
+   instructions — never a request to set up a digest (a task run can't
+   schedule other tasks).
    ---
    ${DIGEST_TASK_PROMPT}
    ---
