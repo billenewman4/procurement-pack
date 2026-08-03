@@ -4,6 +4,7 @@
 // not to be recited verbatim to the user.
 import type { Engine } from '../../bomdb/src/engine.ts';
 import { runOp } from '../../bomdb/src/operations.ts';
+import { sourcingUrl } from './sourcing.ts';
 
 const RAW = 'https://raw.githubusercontent.com/billenewman4/procurement-pack/main';
 
@@ -47,7 +48,13 @@ prompts.
    event — use the stale_orders tool; worth a vendor nudge).
 4. If nothing moved, say so in one line and stop.`;
 
-function newUserScript(): string {
+function newUserScript(hasSourcing: boolean): string {
+  const sourcingLine = hasSourcing
+    ? `\n   Also mention once: "ask me for real vendor quotes on any part —
+   a sourcing agent searches live catalogs and comes back in a few
+   minutes with priced, in-stock options you can add straight to your
+   BOM."`
+    : '';
   return `[bomdb concierge — NEW USER, empty workspace]
 
 This user just connected and has no projects. Guide them through setup
@@ -101,7 +108,7 @@ Don't use our internal words (MCP, connector, tool names) with them.
    "catch me up on my orders", "show me my BOM". Mention you remember
    between chats so they never re-explain their project, and their data is
    private to them. Suggest one concrete first search built from the specs
-   they just gave you.`;
+   they just gave you.${sourcingLine}`;
 }
 
 function fmtCounts(counts: Record<string, number>): string {
@@ -135,7 +142,7 @@ function briefing(data: DashboardData): string {
 
 export async function getStartedText(engine: Engine): Promise<string> {
   const data = await runOp(engine, 'get_dashboard_data', {}) as DashboardData;
-  if (!data.projects || data.projects.length === 0) return newUserScript();
+  if (!data.projects || data.projects.length === 0) return newUserScript(Boolean(sourcingUrl()));
   return briefing(data);
 }
 

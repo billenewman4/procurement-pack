@@ -1,118 +1,31 @@
 # INSTALL_FOR_AGENTS.md
 
-You are a Claude agent setting up the procurement pack for your user. Read
-this entire file, then follow the steps in order. Target: under 5 minutes.
-Ask the user ONLY the questions marked [ASK]. If a step fails, follow its
-failure branch and keep going — never abandon setup silently.
+You are a Claude agent asked to set up the procurement pack for your user.
+As of 2026-08-03 setup is a hosted connector — there is nothing for you to
+install on this machine, and most of what this file used to do now happens
+automatically in the user's first chat.
 
-## Step 0 — Detect your surface
+Do exactly this:
 
-- **Claude Code, persistent machine** (shell, git, and a `~` that survives
-  the session): follow path A in each step.
-- **Cowork / claude.ai** (granted workspace folder, no home dir): path B.
-- **Ephemeral cloud session** (you have a shell but the home dir dies with
-  the session): path C — use the workspace store like path B, and instead of
-  symlinking, package each skill directory as a `.skill` file and present it
-  for the user to **Save skill** to their Claude account. Account-saved
-  skills auto-trigger in future sessions — this is the durable install on
-  this surface. Tell the user to click Save on each card.
+1. Ask whether they already have their **personal connector link** (a URL
+   like `https://…run.app/mcp/<token>`, sent privately by whoever operates
+   their team's BOM database). If they don't have one, that operator must
+   provision it first — see `TEAM_SETUP.md`; you cannot mint one.
 
-If you are on path C, SAY SO to the user before proceeding, in plain words:
-"this session is a cloud container — it can't see folders on your computer
-or locally-configured MCP servers (like a local bomdb), and its files vanish
-when the session ends. The .skill saves are what persists." If the user
-wants the store on their machine or uses a local bomdb, tell them to rerun
-this install in a LOCAL Desktop session with a folder granted (or in Claude
-Code) — don't let them discover the difference by losing data.
+2. Tell them, in plain words: "Open claude.ai → Settings → Connectors →
+   Add custom connector → paste your link → Add. Treat the link like a
+   password. If your workspace is on a Team plan, an org Owner has to add
+   it." You cannot click this for them — connector setup is theirs.
 
-## Step 1 — Get the pack
+3. Then: "Start a new chat and say **set up my BOM**." The connector's
+   built-in concierge takes over from there: project creation, the spec
+   interview, skill save-cards, Gmail, the morning digest. Do not attempt
+   to replicate those steps yourself; the concierge's version is
+   state-aware and current.
 
-**A (Claude Code):**
-```bash
-git clone --depth 1 https://github.com/billenewman4/procurement-pack.git ~/procurement-pack
-mkdir -p ~/.claude/skills
-ln -sfn ~/procurement-pack/skills/part-search  ~/.claude/skills/part-search
-ln -sfn ~/procurement-pack/skills/gmail-orders ~/.claude/skills/gmail-orders
-ls ~/.claude/skills/part-search/SKILL.md ~/.claude/skills/gmail-orders/SKILL.md  # verify: both print
-```
-Failure branch: no `git` → download the GitHub zip via web fetch and unzip to
-`~/procurement-pack`, then make the symlinks. Skills load at session start —
-tell the user new sessions will have them.
+That's the entire install. Only two situations call for anything more:
 
-**B (Cowork):** fetch
-`https://github.com/billenewman4/procurement-pack/archive/refs/heads/main.zip`
-into the workspace folder and extract it there. Skills are used by reading
-`skills/<name>/SKILL.md` from the folder; tell the user that adding them as
-uploaded claude.ai Skills later makes them auto-trigger.
-
-## Step 2 — Initialize the store
-
-FIRST check whether bomdb MCP tools are available to you (tool names starting
-`bomdb` — e.g. `create_project`, `get_project_context`). If yes, the store is
-the database, not a file: create the project and specs through those tools and
-skip the bom.json below. If no, use the JSON store for this surface.
-
-[ASK] "What should we call your first project?" (one short name, e.g.
-"robot-v1").
-
-Always create a **brand-new, empty** store for the user. Never copy, seed
-from, or reuse any `bom.json` you find in the pack repo — `evals/fixtures/`
-contains fake test data for grading the skills, not user data. Path per
-surface (A: `~/.procurement-pack/<slug>/bom.json`, B: `./bom.json` in the
-workspace):
-
-```json
-{
-  "project": { "id": "p1", "name": "<slug>", "created_at": "<today>" },
-  "specs": [], "line_items": [], "order_events": [],
-  "last_email_sync": "<now, ISO-8601 UTC>"
-}
-```
-
-Then [ASK]: "Describe your project's key specs — voltages, connectors,
-materials, constraints like country-of-origin. A couple of sentences is
-plenty; this is what makes part search accurate." Store each as a
-`specs` entry. If the user declines, continue — search will ask as it goes.
-
-Verify: read the file back and confirm valid JSON.
-
-## Step 3 — Gmail (optional but recommended)
-
-Check whether Gmail MCP tools are available to you (tool names containing
-`Gmail`). If yes, run the cheapest read (list labels) to confirm auth.
-
-- Available + authed → tell the user order tracking from email is on.
-- Not available → say: "Connect Gmail at claude.ai/customize/connectors to
-  enable automatic order tracking — everything else works without it," and
-  continue. Do NOT block setup on this.
-
-## Step 4 — Verify end-to-end
-
-Run one real search using skills/part-search/SKILL.md: "M3x10 socket head
-cap screws, stainless, 25+". Confirm you produce the options table with real
-links, then offer to add it to the BOM. If the user says yes, verify the
-line item landed in the store file. This is the setup success signal —
-show the user the report and where the store lives.
-
-## Step 5 — Teach the user (30 seconds, verbatim-ish)
-
-Tell them:
-- "Ask me to find any part — I'll check it against your project specs and
-  real datasheets before recommending."
-- "Say 'catch me up on my orders' anytime — I'll sweep your email and update
-  the BOM: what shipped, what's late, what's missing."
-- "Everything lives in <store path> — it's yours, plain JSON, take it
-  anywhere."
-
-**A only:** offer to append a two-line routing note to the project's
-CLAUDE.md so future sessions know these skills exist. Skip if declined.
-
-## Known limitations to state honestly if asked
-
-- Scheduled background email sync is proven on Claude Code cloud routines;
-  on claude.ai scheduled tasks it's untested — the catch-up-on-open sweep
-  covers the gap.
-- The bomdb database server is shipped (see `bomdb/README.md`): local-first
-  PGLite, or hosted Postgres via `DATABASE_URL`. It's a locally-registered
-  MCP server, so cloud sessions can't reach it — the local JSON store covers
-  those surfaces, and `import_json` migrates it forward mechanically.
+- **Developer/offline machine install** of the local stdio server: follow
+  the appendix in `TEAM_SETUP.md`.
+- **They can't reach the operator:** stop and tell them plainly there is
+  no self-serve signup yet.

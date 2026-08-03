@@ -1,68 +1,74 @@
 # Procurement Pack
 
-Claude extension pack for hardware procurement: context-aware part search, BOM/order
-tracking in a shared Postgres, and Gmail-driven order status updates.
+Claude extension pack for hardware procurement: a BOM database that follows
+your account everywhere, context-aware part search, Gmail-driven order
+tracking, dashboard artifacts, and (when enabled) deep sourcing quotes from
+live vendor catalogs.
 
-## Install (paste this into Claude Code or Cowork)
+## Get started (60 seconds, no terminal)
 
-> Fetch https://raw.githubusercontent.com/billenewman4/procurement-pack/main/INSTALL_FOR_AGENTS.md
-> and follow it to set up the procurement pack for me.
+1. Get your personal connector link from whoever runs your team's database
+   (it looks like `https://…run.app/mcp/<your-token>` — treat it like a
+   password).
+2. On claude.ai: **Settings → Connectors → Add custom connector** → paste
+   the link → Add. *(Team/Enterprise plans: an org Owner must do this step.)*
+3. Open a new chat and say: **set up my BOM**
 
-That's the entire setup — your Claude does the rest (~5 minutes, two questions).
+That's the whole install. Claude walks you through the rest in the chat —
+your project, its specs, optional skill upgrades, Gmail order tracking, and
+a weekday-morning digest. The connector works on claude.ai web, the Desktop
+app, mobile, Cowork, and scheduled tasks.
+
+## What you get
+
+- **A BOM that remembers.** Projects, specs, line items, and order history
+  in your own row-level-isolated Postgres workspace. Interview once; every
+  future chat on every device starts warm.
+- **Part search that respects your build.** The search skill loads your
+  specs and current BOM before searching, so suggestions fit your system,
+  not just your sentence.
+- **Order tracking from email.** Gmail order emails become status updates
+  on the right line items — in-chat on demand, or unattended via the
+  morning digest scheduled task.
+- **Dashboards on demand.** "Show me my BOM" renders a consistent artifact:
+  spend, pipeline, stalls, issues.
+- **Deep sourcing (when enabled).** "Get me real quotes for X" dispatches a
+  sourcing agent over live vendor catalogs; priced, in-stock options come
+  back in minutes, ready to add to the BOM.
 
 ## Architecture
 
 ```
-                    ┌────────────┐
-   Gmail (skill +   │            │   Search (skill)
-   sched. task) ───▶│   Claude   │◀─── reads project specs
-        reads only  │    Code    │     from DB first
-                    │  (hub, the │
-                    │only writer)│──── all writes ──▶ Postgres (MCP, only connector)
-                    │            │
-                    │            │──── generates ──▶ Artifact (render target only —
-                    └────────────┘                    artifacts cannot reach the DB)
+ Any Claude surface (web / Desktop / mobile / Cowork / scheduled tasks)
+   │  account-saved skills: part-search, gmail-orders, bom-dashboard
+   │
+   ├── MCP over HTTPS (per-user secret URL) ──▶ Cloud Run: bomdb-remote
+   │                                             ├─ bomdb ops (shared with local)
+   │                                             ├─ get_started concierge
+   │                                             └─ sourcing relay ──▶ sourcing-agent
+   │                                             │                     (hosted separately)
+   │                                             ▼
+   │                                           Supabase Postgres (RLS per user)
+   └── Gmail connector (user's own OAuth) ──▶ Google
 ```
 
-Rules:
-- Claude is the **only writer** to the database. Gmail and search return structured
-  text; Claude reconciles and writes.
-- The database is the **project context store**, not just an order log. The search
-  skill reads specs/BOM from it before searching — that's the differentiator.
-- Artifacts are snapshots regenerated from DB data (CSP blocks artifact→network).
+Rules that keep it sane:
+- **Claude is the only writer.** Gmail and search produce structured text;
+  Claude reconciles and writes through bomdb tools.
+- **The database is the context store**, not just an order log — search
+  reads specs first; that's the differentiator.
+- **Artifacts are snapshots** regenerated from DB data (the artifact
+  sandbox has no network). Statuses never move backward without explicit
+  confirmation; there is no delete operation.
+- **No user token ever maps to the master DB connection.** Master is for
+  admin scripts only.
 
-## Work split
+## For operators
 
-- **Bill:** `skills/part-search/`, `skills/gmail-orders/`
-- **Eshan:** Postgres + MCP connector — **built** (`bomdb/`, registered via
-  `claude mcp add`), artifact/dashboard skill, DB write flows
-- **Shared contract:** `SCHEMA.md` — lock this together BEFORE building. Both
-  skills' output formats are pinned to it.
-
-## Day-one smoke tests (do before building anything)
-
-1. **Scheduled task → custom MCP**: create a throwaway scheduled task in claude.ai
-   that calls the Gmail connector AND a custom MCP connector. If scheduled runs
-   can't reach custom connectors, fall back to "catch-up on open" (skill sweeps
-   last N days at session start). This decides the gmail-orders design.
-2. **Gmail signal check**: search your own inbox for McMaster/Digi-Key/Amazon
-   order emails. Confirm order #, items, and prices are actually extractable from
-   the email bodies (some vendors send image-only or link-only confirmations).
-
-Status: email-extraction smoke passed on real inbox samples (Wayfair/IKEA,
-plaintext extractable); scheduled-task→custom-MCP test still open.
-
-## Build order (Bill)
-
-1. Run **baseline evals** (`evals/`) — vanilla Claude, no skill — on the real
-   failure scenarios from the customer calls. Save transcripts.
-2. Write/refine `part-search` against the observed failures. Re-run evals.
-3. Same loop for `gmail-orders` on your own inbox.
-4. Integrate DB read/write once the MCP is up (Sunday merge).
-5. Dogfood: the Arduino project's real orders become live test data for both
-   skills by Monday.
-
-## Install (local iteration)
-
-Symlink or copy skills into `~/.claude/skills/` (Claude Code) or upload to
-claude.ai as skills. Keep this repo as the source of truth.
+- **Onboard a user / rotate / revoke:** `bomdb-remote/README.md` (the
+  runbook: provision role → mint token → TOKEN_MAP → redeploy → send link).
+- **Reset a workspace for onboarding tests:** `bomdb/scripts/reset-user.ts`.
+- **Local/power-user install (terminal + Desktop stdio server):**
+  `TEAM_SETUP.md`.
+- **Design history and decisions:**
+  `docs/plans/2026-08-03-hosted-connector-onboarding-design.md`.
