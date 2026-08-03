@@ -60,15 +60,18 @@ Don't use our internal words (MCP, connector, tool names) with them.
    choose sensible beginner defaults, store them, and tell them what you
    chose. Read the stored specs back to them in one compact line.
 
-3. UPGRADES (skills). Say: "I have three upgrades that make me sharper at
-   part searching, order tracking, and showing your BOM as a dashboard —
-   want them?" If yes: fetch these three files and package EACH as a skill
-   with a save card; tell them to click Save on all three, and that they
-   take effect in their NEXT chat:
-   ${RAW}/skills/part-search/SKILL.md
-   ${RAW}/skills/gmail-orders/SKILL.md
-   ${RAW}/skills/bom-dashboard/SKILL.md
-   Never claim this step is done until they confirm saving.
+3. UPGRADES (skills). Three skills belong with this connector:
+   part-search — ${RAW}/skills/part-search/SKILL.md
+   gmail-orders — ${RAW}/skills/gmail-orders/SKILL.md
+   bom-dashboard — ${RAW}/skills/bom-dashboard/SKILL.md
+   Check which are already active in this conversation. Already active →
+   skip silently. For EACH one that is missing: fetch its file and package
+   it as a skill with a save card — a skill being absent from their
+   account is exactly the reason to package it, never a reason to skip.
+   Offer first in one line ("I have N upgrades that make me sharper at
+   X — want them?"), and after they save, tell them the skills take
+   effect in their NEXT chat. Never claim this step is done until they
+   confirm saving.
 
 4. GMAIL (optional, never block). If Gmail tools are available in this
    conversation, confirm order tracking is on with the cheapest possible
