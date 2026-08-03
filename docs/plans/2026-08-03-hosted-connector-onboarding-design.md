@@ -146,6 +146,65 @@ at the moment it's relevant.
 ## Open items
 
 - Product/connector naming (persona? "Jason"-style) — strings only.
-- Scheduled-task → custom-connector support (empirical, Phase 0).
+- ~~Scheduled-task → custom-connector support~~ — RESOLVED, see Phase 0
+  results: supported. Functionality 4 proceeds as full sync.
 - Team-plan users need an org Owner to add the connector — document.
 - Live dashboard — deferred, YAGNI until asked for.
+
+## Phase 0 results (2026-08-03)
+
+All tests passed. Executed same-day as the design; plan at
+`2026-08-03-phase0-derisk.md`.
+
+**Deployment.** Toy server (`bomdb-remote/`, one unauthenticated `ping`
+tool, stateless streamable HTTP) live at
+`https://bomdb-remote-869731474645.us-central1.run.app/mcp`, Cloud Run
+service `bomdb-remote`, **project `carbonella`**, us-central1, revision
+`bomdb-remote-00001-ktm`.
+
+**GCP quota resolution.** The remembered "max projects" limit is the
+billing account's 5-project link quota (account `01CD63-5800C0-4522AF`,
+exactly 5 linked). `lora-procurement-pack` exists but is unbilled; linking
+it failed with `FAILED_PRECONDITION: Cloud billing quota exceeded`. Eshan
+chose to deploy into billed project `carbonella`. Optional later: file the
+billing quota-increase request and migrate; a custom domain would make the
+move invisible to users.
+
+**Surface reachability — connector added ONCE on claude.ai web:**
+
+| Surface | Result |
+|---|---|
+| claude.ai web | ✅ pong 18:59:04Z (log line matches exactly) |
+| Cowork desktop | ✅ pong 19:03:10Z — auto-synced after app restart, no re-add |
+| Mobile app | ✅ pong — auto-synced |
+| Claude Code terminal | ✅ bonus: account connector appears in `claude mcp list` as `claude.ai BOM DB test ✔ Connected` — hosted connector reaches even the terminal with zero local setup |
+
+**Auth modes.** claude.ai accepted an unauthenticated custom connector
+without warnings. OAuth remains the Phase 2 plan; no interim secrets.
+
+**Smoke test #1 — scheduled task → custom connector: SUPPORTED.** A
+one-off scheduled task created conversationally called `ping` and reported
+a fresh pong (user-confirmed; verbatim task output not archived). Cloud
+Run logs independently show initialize/list/call request clusters in the
+19:05–19:08Z window matching the run. **Decision: functionality 4 is full
+email→BOM sync from scheduled runs. The catch-up-on-open fallback is not
+needed; Bill's report-only caveat can be retired when the real connector
+ships.**
+
+**Incidental findings.**
+- `/healthz` is intercepted (404) by Google's frontend on `run.app`
+  domains before reaching the container; renamed to `/health`
+  (commit d89eabe). GETs otherwise reach the app fine — OAuth discovery
+  endpoints in Phase 2 are unaffected.
+- Mid-test, the *local* stdio bomdb began crashing: `EHOSTUNREACH` to
+  Supabase's direct IPv6 host (network-dependent; worked the previous
+  day). Fixed by switching all three registrations (bomdb/.env, Claude
+  Desktop config, `claude mcp` user scope) to the IPv4 session pooler
+  `aws-0-us-west-1.pooler.supabase.com` with user
+  `postgres.<project-ref>`; authenticated test query returned all 3
+  projects. This failure mode is exactly what the hosted connector
+  eliminates.
+
+**Cleared to proceed: Phase 1** (port real bomdb ops to the hosted
+transport). Phase 1 exit checklist must include disabling/removing the
+local bomdb registrations once tool names would collide on Desktop.
