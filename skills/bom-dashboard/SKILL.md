@@ -34,16 +34,23 @@ near-white), never in a data color.
 
 ### Layout, top to bottom
 
-1. **Header row** — project name(s) + "as of <timestamp>" (small, muted).
-   Data is a snapshot; say when it was taken.
+The organizing idea: **decision stages, left to right through time —
+deciding → buying → waiting → done.** Each stage shows exactly as much
+as the user needs there: many links while deciding, ONE link while
+buying, tracking while waiting.
+
+1. **Project tabs** — one tab per project, client-side toggle (inline JS
+   is fine; only network is blocked); everything below scoped to the
+   active tab. Single project → no tab row. Small muted "as of
+   <timestamp>" beside the tabs — data is a snapshot.
 2. **Stat tiles** (one row, wrap on narrow): Total committed `$X.YZ` ·
    Items delivered `n/total` · Open issues `n` · Stale orders `n`.
    Big number, small muted label under it. Issue/stale tiles: show the
    status color ONLY as a small dot/icon beside the number when n > 0 —
    the number itself stays in ink.
-3. **Pipeline bar, one per project** — a single horizontal stacked bar of
-   item counts through the lifecycle. Segment colors (an ordinal
-   single-hue ramp — validated, do not substitute):
+3. **Pipeline bar** — a single horizontal stacked bar of item counts
+   through the lifecycle. Segment colors (an ordinal single-hue ramp —
+   validated, do not substitute):
    - Light mode: needed `#86b6ef`, researching `#5598e7`, ordered
      `#2a78d6`, shipped `#1c5cab`, delivered `#104281`
    - Dark mode: needed `#9ec5f4`, researching `#6da7ec`, ordered
@@ -51,28 +58,35 @@ near-white), never in a data color.
    2px gaps between segments (surface-colored). Label each nonzero segment
    directly below the bar as "3 ordered" (ink text + a small color chip) —
    identity must never be color-alone. Items with status `issue` are NOT a
-   pipeline segment — they appear only in the callout section.
-4. **Callouts** (only when nonempty): items flagged `issue` (critical red
-   `#d03b3b`) and stale orders — ordered, silent 7+ days (serious orange
-   `#ec835a`). Each callout = icon + label + item description + vendor,
-   color never alone. These two colors are reserved for exactly this;
-   never reuse them in the pipeline or anywhere decorative.
-5. **Items table** — grouped by status in lifecycle order (needed →
-   researching → ordered → shipped → delivered → issue): description,
-   vendor, qty, unit price, line total, ETA/notes where present. Vendor
-   name links to `product_url` when present. This table doubles as the
-   accessible fallback for everything the graphics show.
-6. **Option cards** — for each `needed`/`researching` item that has
-   `options`, render a compact card row directly under its table row: one
-   card per option showing vendor, price, availability, and `fit_notes`,
-   with the vendor name linking to `product_url`. Mark a `selected` option
-   with a subtle ✓ badge; candidates get a muted "option 1/2/3" label the
-   user can refer to in chat. Cards are informational — no buttons, no
-   fake interactivity (the page cannot write to the database). Under the
-   card row, one muted line: "to pick one, just tell me — e.g. 'go with
-   the Mouser option'". Items with no options render nothing extra.
-6. **Recent activity** — up to 5 `recent_events` as one-liners:
+   pipeline segment — they appear only in the Issues section.
+4. **⚠ Issues** (only when nonempty, pinned first): `issue` items in
+   critical red `#d03b3b` — icon + label + description + vendor, color
+   never alone. This red and the stale orange are reserved for exactly
+   this; never reuse them decoratively.
+5. **🔍 Researching** — items in `needed`/`researching` WITHOUT a chosen
+   vendor. Each item row, then its **option cards** beneath: vendor name
+   linked to `product_url`, price, availability, `fit_notes`, muted
+   "option 1/2/3" labels the user can say in chat. No buttons, no fake
+   interactivity (the page cannot write to the database) — one muted
+   line under the cards: "to pick one, just tell me — e.g. 'go with the
+   Mouser option'". Items with no options yet get one muted line: "no
+   vendor options yet — ask me to research this or get quotes".
+6. **🛒 Ready to buy** — `needed`/`researching` items WITH a vendor
+   (selected option, or vendor set directly). One clean card per item:
+   description, chosen vendor, qty × unit price = line total, and a
+   prominent **"Buy at <vendor> →"** link to `product_url` — the execute
+   affordance; the artifact cannot place orders. One muted line for the
+   section: "after you order, tell me — or email tracking will catch it".
+7. **📦 On order** — `ordered`/`shipped` items: description, vendor, ETA
+   when known, last event. Stale ones (7+ days silent) flagged with the
+   serious orange `#ec835a` + icon.
+8. **✅ Delivered** — compact rows, most recent first.
+9. **Recent activity** — up to 5 `recent_events` as one-liners:
    "shipped — Digi-Key — Aug 2".
+
+The stage sections replace a separate items table — keep them
+structurally table-like (real rows, consistent columns) so they remain
+the accessible fallback for the graphics.
 
 ### Style rules
 
