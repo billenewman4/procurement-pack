@@ -14,10 +14,11 @@ are fixed so every render looks like the same product; only the data changes.
 ## Step 1 — Load the data
 
 Call the BOM connector's `get_dashboard_data` tool (pass `project_id` only if
-the user asked about one project). Every number shown must come from this
-response — never compute totals yourself, never fill gaps from conversation
-memory. No projects returned → don't render an empty dashboard; offer to set
-one up instead.
+the user asked about one project). It returns everything in one call —
+aggregates, line items, and each item's vendor `options`. Every number shown
+must come from this response — never compute totals yourself, never fill
+gaps from conversation memory. No projects returned → don't render an empty
+dashboard; offer to set one up instead.
 
 ## Step 2 — Render ONE self-contained HTML artifact
 
@@ -61,6 +62,15 @@ near-white), never in a data color.
    vendor, qty, unit price, line total, ETA/notes where present. Vendor
    name links to `product_url` when present. This table doubles as the
    accessible fallback for everything the graphics show.
+6. **Option cards** — for each `needed`/`researching` item that has
+   `options`, render a compact card row directly under its table row: one
+   card per option showing vendor, price, availability, and `fit_notes`,
+   with the vendor name linking to `product_url`. Mark a `selected` option
+   with a subtle ✓ badge; candidates get a muted "option 1/2/3" label the
+   user can refer to in chat. Cards are informational — no buttons, no
+   fake interactivity (the page cannot write to the database). Under the
+   card row, one muted line: "to pick one, just tell me — e.g. 'go with
+   the Mouser option'". Items with no options render nothing extra.
 6. **Recent activity** — up to 5 `recent_events` as one-liners:
    "shipped — Digi-Key — Aug 2".
 

@@ -25,7 +25,7 @@ await engine.query(`CREATE ROLE ${role} LOGIN PASSWORD '${password}'`);
 await engine.query(`GRANT USAGE ON SCHEMA public TO ${role}`);
 await engine.query(`GRANT SELECT ON users TO ${role}`);
 await engine.query(
-  `GRANT SELECT, INSERT, UPDATE ON projects, project_specs, line_items, order_events TO ${role}`);
+  `GRANT SELECT, INSERT, UPDATE ON projects, project_specs, line_items, order_events, line_item_options TO ${role}`);
 await engine.query(
   `INSERT INTO users (name, email, sharing, pg_role) VALUES ($1, $2, 'hosted', $3)
    ON CONFLICT (email) DO UPDATE SET pg_role = EXCLUDED.pg_role, name = EXCLUDED.name`,

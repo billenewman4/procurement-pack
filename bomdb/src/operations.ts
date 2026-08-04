@@ -227,6 +227,73 @@ export const operations: Operation[] = [
       [p.project_id ?? null, p.days ?? null]),
   },
   {
+    name: 'add_line_item_option',
+    description: 'Store a vendor option (candidate) for a line item — call after part search or a sourcing quote so alternatives persist and show on the dashboard. Store the top 2-3, not just the favorite.',
+    params: {
+      line_item_id: { type: 'string', required: true },
+      project_id: { type: 'string', required: true },
+      vendor: { type: 'string', required: true },
+      part_number: { type: 'string' },
+      product_url: { type: 'string' },
+      unit_price: { type: 'number' },
+      availability: { type: 'string', description: 'e.g. "in stock", "3-week lead", "RFQ only"' },
+      moq: { type: 'number', description: 'Minimum order quantity, if any' },
+      fit_notes: { type: 'string', description: 'One line: why this option / the tradeoff' },
+      source: { type: 'string', enum: ['manual', 'search', 'sourcing_quote'] },
+      quote_id: { type: 'string', description: 'Sourcing quote id when source is sourcing_quote' },
+    },
+    handler: async (engine, p) => {
+      const [item] = await engine.query(
+        `SELECT id FROM line_items WHERE id = $1 AND project_id = $2`,
+        [p.line_item_id, p.project_id]);
+      if (!item) return { error: `line item ${p.line_item_id} not found in project ${p.project_id}` };
+      const rows = await engine.query(
+        `INSERT INTO line_item_options
+           (line_item_id, project_id, vendor, part_number, product_url, unit_price,
+            availability, moq, fit_notes, source, quote_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,COALESCE($10,'manual'),$11) RETURNING *`,
+        [p.line_item_id, p.project_id, p.vendor, p.part_number, p.product_url,
+         p.unit_price, p.availability, p.moq, p.fit_notes, p.source, p.quote_id]);
+      return rows[0];
+    },
+  },
+  {
+    name: 'list_options',
+    description: 'Vendor options stored for a line item, oldest first.',
+    params: { line_item_id: { type: 'string', required: true } },
+    handler: (engine, p) => engine.query(
+      `SELECT * FROM line_item_options WHERE line_item_id = $1 ORDER BY created_at`,
+      [p.line_item_id]),
+  },
+  {
+    name: 'select_option',
+    description: "Choose a vendor option: stamps its vendor/part/url/price onto the line item, marks it selected and its siblings rejected. Use when the user picks from the dashboard's option cards or in conversation.",
+    params: {
+      option_id: { type: 'string', required: true },
+      project_id: { type: 'string', required: true },
+    },
+    handler: async (engine, p) => {
+      const [opt] = await engine.query<Record<string, unknown>>(
+        `UPDATE line_item_options SET status = 'selected'
+         WHERE id = $1 AND project_id = $2 RETURNING *`,
+        [p.option_id, p.project_id]);
+      if (!opt) return { error: `option ${p.option_id} not found in project ${p.project_id}` };
+      await engine.query(
+        `UPDATE line_item_options SET status = 'rejected'
+         WHERE line_item_id = $1 AND id <> $2 AND status <> 'rejected'`,
+        [opt.line_item_id, p.option_id]);
+      const [line_item] = await engine.query(
+        `UPDATE line_items SET
+           vendor = $2,
+           part_number = COALESCE($3, part_number),
+           product_url = COALESCE($4, product_url),
+           unit_price = COALESCE($5, unit_price)
+         WHERE id = $1 RETURNING *`,
+        [opt.line_item_id, opt.vendor, opt.part_number, opt.product_url, opt.unit_price]);
+      return { option: opt, line_item };
+    },
+  },
+  {
     name: 'get_dashboard_data',
     description: 'Aggregated BOM dashboard data: per-project status counts, committed spend, spec coverage, open issues, stale ordered items, recent order events. Call this before rendering a BOM dashboard or status overview.',
     params: { project_id: { type: 'string', description: 'Omit for all projects' } },
@@ -257,6 +324,15 @@ export const operations: Operation[] = [
         const recent_events = await engine.query(
           `SELECT event, vendor, order_number, event_at, raw_summary
            FROM order_events WHERE project_id = $1 ORDER BY event_at DESC LIMIT 5`, [proj.id]);
+        const items = await engine.query<Record<string, unknown> & { id: string }>(
+          `SELECT * FROM line_items WHERE project_id = $1 ORDER BY status, description`, [proj.id]);
+        const options = await engine.query<Record<string, unknown> & { line_item_id: string }>(
+          `SELECT * FROM line_item_options
+           WHERE project_id = $1 AND status <> 'rejected' ORDER BY created_at`, [proj.id]);
+        const itemsWithOptions = items.map(li => ({
+          ...li,
+          options: options.filter(o => o.line_item_id === li.id),
+        }));
         out.push({
           id: proj.id,
           name: proj.name,
@@ -267,6 +343,7 @@ export const operations: Operation[] = [
           open_issues: counts.find(c => c.status === 'issue')?.n ?? 0,
           stale_items: stale,
           recent_events,
+          items: itemsWithOptions,
         });
       }
       return { projects: out };

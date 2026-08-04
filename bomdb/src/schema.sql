@@ -44,6 +44,25 @@ CREATE TABLE IF NOT EXISTS line_items (
   outcome_notes text
 );
 
+CREATE TABLE IF NOT EXISTS line_item_options (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  line_item_id uuid NOT NULL REFERENCES line_items(id) ON DELETE CASCADE,
+  project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  vendor text NOT NULL,
+  part_number text,
+  product_url text,
+  unit_price numeric(10,2),
+  availability text,
+  moq int,
+  fit_notes text,
+  source text NOT NULL DEFAULT 'manual'
+    CHECK (source IN ('manual','search','sourcing_quote')),
+  quote_id text,
+  status text NOT NULL DEFAULT 'candidate'
+    CHECK (status IN ('candidate','selected','rejected')),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS order_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   line_item_id uuid REFERENCES line_items(id) ON DELETE SET NULL,
@@ -70,6 +89,7 @@ ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_specs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE line_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE line_item_options ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS pg_role text UNIQUE;
 
@@ -100,6 +120,11 @@ CREATE POLICY line_items_own ON line_items FOR ALL
 
 DROP POLICY IF EXISTS order_events_own ON order_events;
 CREATE POLICY order_events_own ON order_events FOR ALL
+  USING (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user))
+  WITH CHECK (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user));
+
+DROP POLICY IF EXISTS line_item_options_own ON line_item_options;
+CREATE POLICY line_item_options_own ON line_item_options FOR ALL
   USING (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user))
   WITH CHECK (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user));
 
