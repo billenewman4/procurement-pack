@@ -11,94 +11,155 @@ One consistent, glanceable artifact for "show me my BOM." Data comes from the
 database — never from memory or the conversation. The layout and colors below
 are fixed so every render looks like the same product; only the data changes.
 
+The organizing idea: a BOM has exactly three states a person cares about —
+**what am I still deciding, what's on its way, what's on my bench.** The
+dashboard is three tabs on that split. Only one is on screen at a time, so no
+tab has to fight the others for attention.
+
 ## Step 1 — Load the data
 
-Call the BOM connector's `get_dashboard_data` tool (pass `project_id` only if
-the user asked about one project). It returns everything in one call —
-aggregates, line items, and each item's vendor `options`. Every number shown
-must come from this response — never compute totals yourself, never fill
-gaps from conversation memory. No projects returned → don't render an empty
-dashboard; offer to set one up instead.
+Call `get_dashboard_data` (pass `project_id` only if the user asked about one
+project). Every number shown must come from this response — never compute
+totals yourself, never fill gaps from conversation memory. No projects
+returned → don't render an empty dashboard; offer to set one up instead.
 
-## Step 2 — Render ONE self-contained HTML artifact
+**Then call `list_options` for each item that will land in the Researching
+tab.** This matters: `get_dashboard_data` returns only `selected` and
+`candidate` options and silently drops `rejected` ones, so once a decision is
+made the alternatives vanish from the payload. `list_options` returns all of
+them regardless of status. The rejected ones are the most interesting thing on
+the page — they're the record of what was weighed and why — so fetch them.
+
+Don't call `list_options` for Ordered or Delivered items. Those decisions are
+settled and the alternatives are noise.
+
+## Step 2 — Map statuses onto three tabs
+
+The database has six statuses. The dashboard shows three. Fold them:
+
+| Tab | Includes | Why |
+|---|---|---|
+| **Researching** | `needed` + `researching` | Both mean "not ordered." The distinction is invisible to the user and splitting them fragments the one list they actually work from. |
+| **Ordered** | `ordered` + `shipped` | Both mean "money spent, part not here." Shipped is a detail of an order, not a separate life stage — show it as a status chip on the row. |
+| **Delivered** | `delivered` + `issue` | An item flagged `issue` is physically in hand; it just doesn't work. It belongs with the other parts on the bench, marked. |
+
+Never invent a fourth tab, and never give `issue` its own tab for one row.
+
+## Step 3 — Render ONE self-contained HTML artifact
 
 Single file, inline CSS, no external resources (fonts, CDNs, images) — the
-artifact sandbox blocks all network access. Responsive: relative units,
-`max-width: 100%`, and any wide table wrapped in its own
-`overflow-x: auto` container so the page never scrolls horizontally.
+artifact sandbox blocks all network access. Tabs must be **CSS-only**: hidden
+radio inputs plus `:checked ~` sibling selectors. No JavaScript; it isn't
+needed and the artifact should survive with scripting off.
+
+Responsive: relative units, `max-width: 100%`, and every table wrapped in its
+own `overflow-x: auto` container so the page never scrolls horizontally.
 
 **Theme-aware, both modes styled** via `@media (prefers-color-scheme: dark)`
 plus `:root[data-theme="dark"]` / `:root[data-theme="light"]` overrides.
 Surfaces: light `#fcfcfb`, dark `#1a1a19`. Text in neutral ink (near-black /
 near-white), never in a data color.
 
+### Colors
+
+Three-step ordinal ramp, one per tab — validated, do not substitute:
+
+- Light: researching `#5598e7`, ordered `#2a78d6`, delivered `#104281`
+- Dark: researching `#6da7ec`, ordered `#3987e5`, delivered `#184f95`
+
+Critical red `#d03b3b` is reserved for `issue` — the open-issue tile dot and
+the `issue` chip on the delivered row. Nowhere else, ever, including
+decoration. There is no orange in this design.
+
 ### Layout, top to bottom
 
-The organizing idea: **decision stages, left to right through time —
-deciding → buying → waiting → done.** Each stage shows exactly as much
-as the user needs there: many links while deciding, ONE link while
-buying, tracking while waiting.
+1. **Header** — project name, then a muted line: what the project is, total
+   part count, and "as of <timestamp>". Data is a snapshot; say when it was
+   taken.
 
-1. **Project tabs** — one tab per project, client-side toggle (inline JS
-   is fine; only network is blocked); everything below scoped to the
-   active tab. Single project → no tab row. Small muted "as of
-   <timestamp>" beside the tabs — data is a snapshot.
-2. **Stat tiles** (one row, wrap on narrow): Total committed `$X.YZ` ·
-   Items delivered `n/total` · Open issues `n` · Stale orders `n`.
-   Big number, small muted label under it. Issue/stale tiles: show the
-   status color ONLY as a small dot/icon beside the number when n > 0 —
-   the number itself stays in ink.
-3. **Pipeline bar** — a single horizontal stacked bar of item counts
-   through the lifecycle. Segment colors (an ordinal single-hue ramp —
-   validated, do not substitute):
-   - Light mode: needed `#86b6ef`, researching `#5598e7`, ordered
-     `#2a78d6`, shipped `#1c5cab`, delivered `#104281`
-   - Dark mode: needed `#9ec5f4`, researching `#6da7ec`, ordered
-     `#3987e5`, shipped `#256abf`, delivered `#184f95`
-   2px gaps between segments (surface-colored). Label each nonzero segment
-   directly below the bar as "3 ordered" (ink text + a small color chip) —
-   identity must never be color-alone. Items with status `issue` are NOT a
-   pipeline segment — they appear only in the Issues section.
-4. **⚠ Issues** (only when nonempty, pinned first): `issue` items in
-   critical red `#d03b3b` — icon + label + description + vendor, color
-   never alone. This red and the stale orange are reserved for exactly
-   this; never reuse them decoratively.
-5. **🔍 Researching** — items in `needed`/`researching` WITHOUT a chosen
-   vendor. Each item row, then its **option cards** beneath: vendor name
-   linked to `product_url`, price, availability, `fit_notes`, muted
-   "option 1/2/3" labels the user can say in chat. No buttons, no fake
-   interactivity (the page cannot write to the database) — one muted
-   line under the cards: "to pick one, just tell me — e.g. 'go with the
-   Mouser option'". Items with no options yet get one muted line: "no
-   vendor options yet — ask me to research this or get quotes".
-6. **🛒 Ready to buy** — `needed`/`researching` items WITH a vendor
-   (selected option, or vendor set directly). One clean card per item:
-   description, chosen vendor, qty × unit price = line total, and a
-   prominent **"Buy at <vendor> →"** link to `product_url` — the execute
-   affordance; the artifact cannot place orders. One muted line for the
-   section: "after you order, tell me — or email tracking will catch it".
-7. **📦 On order** — `ordered`/`shipped` items: description, vendor, ETA
-   when known, last event. Stale ones (7+ days silent) flagged with the
-   serious orange `#ec835a` + icon.
-8. **✅ Delivered** — compact rows, most recent first.
-9. **Recent activity** — up to 5 `recent_events` as one-liners:
-   "shipped — Digi-Key — Aug 2".
+2. **Stat tiles** — exactly three, one row, wrapping on narrow:
+   Committed `$X.YZ` · In hand `n/total` · Open issues `n`.
+   Big number, small uppercase muted label beneath. The issue tile shows a
+   small red dot beside the number when `n > 0`; the number itself stays in
+   ink. Don't add a fourth tile — a tile reading "0" teaches nothing.
 
-The stage sections replace a separate items table — keep them
-structurally table-like (real rows, consistent columns) so they remain
-the accessible fallback for the graphics.
+3. **Tab strip** — three labels, each with a color swatch and a count pill.
+   Researching is the default checked tab: it's the only one with decisions
+   left in it. Active tab gets ink text and a 2px bottom border; the others
+   stay muted.
+
+4. **Tab panels** — see below. Each opens with one muted sentence of context.
+
+Nothing after the panels. No pipeline bar (the tab counts already carry it)
+and no recent-activity feed (it repeats ETAs that are already on the rows).
+
+### The Researching panel — cards, not rows
+
+Options don't fit in a table cell, so this tab uses cards. One card per item:
+
+- **Title**: short part name + `· qty n`
+- **Why line**: one muted sentence — what it's for, or what turns on the
+  choice ("the pick changes the 12V branch's fuse and wire sizing")
+- **Lead line**: extended price in bold, then `n × $unit · Vendor` muted
+- **Options block**, separated by a hairline rule: heading `3 options`
+  (add `· decided` when one is already `selected`), then one small tile per
+  option, wrapping.
+
+Each option tile:
+
+- Vendor + part number as an **anchor to `product_url`**, `target="_blank"`,
+  with a `↗` affordance. Every option carries a URL — use it. When two options
+  share a landing page (vendors that sell all variants off one page), say so
+  in the note rather than letting it read as a broken link.
+- Price line: `$unit ea` plus availability, muted, tabular numerals. Include
+  a derived unit where it aids comparison ($/ft for wire).
+- One-line `fit_notes` — the tradeoff, not a spec dump.
+- The `selected` option gets a border in the researching blue and a `chosen`
+  tag; if nothing is selected, tag the best-fit one `leading`.
+- `rejected` options render at ~62% opacity with a `ruled out` tag. Keep them.
+  Dimmed, not deleted — "here's what we didn't buy and why" is the whole
+  argument for a BOM database over a spreadsheet.
+
+An item awaiting a sourcing quote gets a single placeholder tile: quote id,
+start time, and what was asked for. Show its price as "not yet priced" and say
+plainly that the committed total understates the build.
+
+### The Ordered and Delivered panels — tables
+
+Both are plain tables, no options, no reasoning:
+
+- **Ordered**: Part · Vendor · Qty · Total · Status.
+  Status cell = a small uppercase chip (`ordered` / `shipped` / `backordered`)
+  followed by the ETA or carrier.
+- **Delivered**: Part · Vendor · Qty · Total · Note.
+  An `issue` item gets a red-outlined `issue` chip before its description and
+  a note saying what's wrong and what to check.
+
+Part cell: bold description, muted sub-line with the part number and the
+one-line reason it was chosen. Vendor links to `product_url`.
+
+Each table ends with a `tfoot` subtotal — "In flight" / "In hand" — so each
+tab answers "how much is this pile worth" without arithmetic. If an `issue`
+item's cost isn't in `total_committed`, the in-hand subtotal will exceed the
+committed figure; that's correct, don't reconcile it silently.
 
 ### Style rules
 
-- Recessive chrome: hairline borders, muted axis/label text; the data is
-  the loudest thing on the page.
+- Recessive chrome: hairline borders, muted labels; the data is the loudest
+  thing on the page.
 - No pie charts, no dual axes, no rainbow palettes, no gradients.
-- Currency with two decimals and a thousands separator.
+- Currency with two decimals and a thousands separator; tabular numerals on
+  every figure that stacks in a column.
 - If everything is delivered and clean, say so plainly at the top —
   "All n items delivered ✓" — a good dashboard is allowed to be boring.
 
-## Step 3 — After rendering
+## Step 4 — After rendering
 
-One line of commentary max, and only if something needs action ("two orders
-look stale — want me to check your email?"). Don't narrate the layout or
-repeat numbers already on screen.
+One line of commentary max, and only if something needs action ("the gear
+train is the only unpriced line — want me to source it?"). Don't narrate the
+layout or repeat numbers already on screen.
+
+If the output is something the user will come back to, deliver it with
+SendUserFile and then persist it with `create_artifact` so it survives the
+conversation. On later renders of the same project, `update_artifact` in place
+rather than creating a second one.
