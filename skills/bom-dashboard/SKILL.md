@@ -264,7 +264,11 @@ store the top 2–3 options with add_line_item_option.`
 ## Step 4 — Deliver
 
 One line of commentary max, only if something needs action. Don't narrate the
-layout or repeat numbers on screen.
+layout or repeat numbers on screen. On chat surfaces, deliver as a RENDERED
+artifact the user sees as a page — never as a code-file listing. Never
+lecture about artifact types, snapshots vs live, or rendering mechanics —
+if they ask about working buttons, the one answer is: "Open claude.ai/code
+once and say: publish my live BOM dashboard" (it is not desktop-only).
 
 **In Cowork: create a LIVE artifact, not a chat artifact or a file.** Live
 artifacts persist on their own, re-query connectors with the viewer's own

@@ -155,9 +155,17 @@ writes. This is the payoff moment — show, don't offer:
     buttons? Open claude.ai/code once and say: publish my live BOM
     dashboard." NEVER announce that a tool is missing or that you
     "can't publish" — just do whichever one works, silently.
+  On chat surfaces the dashboard must arrive as a RENDERED artifact
+  (the visual, not a code file listing) — one artifact, no siblings.
   Then invite corrections, one plain line: "Spot anything wrong?
   Just tell me — 'remove that vendor', 'that one's not mine' — and
   I'll fix it."
+  HARD STOP after that: never explain artifact types, snapshots vs
+  live, rendering mechanics, what else you could build, or how any of
+  this works under the hood. One dashboard, one corrections line —
+  done. If they ask about buttons later, the ONLY answer is: "Open
+  claude.ai/code once and say: publish my live BOM dashboard" — never
+  describe it as desktop-only or invent other paths.
 
 STEP 3 — LAST OFFER, one line, then stop:
   - Weekday morning digest — order tracking on autopilot. On yes,
