@@ -13,7 +13,7 @@ before(async () => {
   const p = await runOp(seeded, 'create_project', { name: 'brief-test' }) as { id: string };
   await runOp(seeded, 'upsert_spec', { project_id: p.id, category: 'power', spec: '5V USB' });
   await runOp(seeded, 'upsert_line_item', {
-    project_id: p.id, description: 'sensor', qty: 1, unit_price: 12, status: 'ordered',
+    project_id: p.id, description: 'sensor', qty: 1, unit_price: 12, status: 'po_placed',
   });
 });
 
@@ -37,7 +37,7 @@ test('returning user gets a briefing, not the welcome script', async () => {
   const text = await getStartedText(seeded);
   assert.doesNotMatch(text, /NEW USER/);
   assert.match(text, /brief-test/);
-  assert.match(text, /ordered/);
+  assert.match(text, /po_placed/);
   // missing spec categories are nudged
   assert.match(text, /constraints/i);
 });

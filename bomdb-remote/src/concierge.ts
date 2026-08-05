@@ -127,7 +127,7 @@ concrete first search built from the specs they just gave you.${sourcingLine}`;
 }
 
 function fmtCounts(counts: Record<string, number>): string {
-  const order = ['needed', 'researching', 'ordered', 'shipped', 'delivered', 'issue'];
+  const order = ['researching', 'rfq', 'po_placed', 'delivered'];
   const parts = order.filter(s => counts[s]).map(s => `${counts[s]} ${s}`);
   return parts.length ? parts.join(', ') : 'no line items yet';
 }
@@ -142,7 +142,7 @@ function briefing(data: DashboardData): string {
     if (p.stale_items.length) {
       nudges.push(`${p.name} has ${p.stale_items.length} ordered item(s) with no update in 7+ days: ${p.stale_items.map(s => s.description).join('; ')} — offer to check email or the vendor.`);
     }
-    if (p.open_issues) nudges.push(`${p.name} has ${p.open_issues} item(s) flagged "issue" awaiting a decision.`);
+    if (p.open_issues) nudges.push(`${p.name} has ${p.open_issues} item(s) with an open issue (from order events) awaiting a decision.`);
     for (const e of p.recent_events.slice(0, 3)) {
       lines.push(`  recent: ${e.event} from ${e.vendor} at ${e.event_at}${e.raw_summary ? ` — ${e.raw_summary}` : ''}`);
     }
