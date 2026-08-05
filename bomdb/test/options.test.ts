@@ -52,15 +52,19 @@ test('list_options returns candidates ordered by creation', async () => {
   assert.equal(list[1].vendor, 'Mouser');
 });
 
-test('select_option stamps the line item and rejects siblings', async () => {
+test('select_option stamps the line item (incl. vendor CRM link) and rejects siblings', async () => {
   const list = await runOp(engine, 'list_options', { line_item_id: itemId }) as { id: string; vendor: string }[];
   const mouser = list.find(o => o.vendor === 'Mouser')!;
   const res = await runOp(engine, 'select_option', {
     option_id: mouser.id, project_id: projectId,
-  }) as { line_item: { vendor: string; unit_price: string | number }; option: { status: string } };
+  }) as { line_item: { vendor: string; vendor_id: string | null; unit_price: string | number }; option: { status: string } };
   assert.equal(res.option.status, 'selected');
   assert.equal(res.line_item.vendor, 'Mouser');
   assert.equal(Number(res.line_item.unit_price), 44.1);
+  // selection commits to the vendor: a CRM row is created and linked
+  assert.ok(res.line_item.vendor_id, 'vendor_id should be stamped');
+  const vendors = await runOp(engine, 'list_vendors', {}) as { id: string; name: string }[];
+  assert.equal(vendors.find(v => v.id === res.line_item.vendor_id)?.name, 'Mouser');
 
   const after_ = await runOp(engine, 'list_options', { line_item_id: itemId }) as { vendor: string; status: string }[];
   assert.equal(after_.find(o => o.vendor === 'Adafruit')!.status, 'rejected');

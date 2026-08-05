@@ -14,6 +14,27 @@ CREATE TABLE IF NOT EXISTS projects (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS vendors (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id),          -- NULL in local/owner mode, like projects
+  name text NOT NULL,
+  domains text[] NOT NULL DEFAULT '{}',       -- email domains seen for this vendor
+  contact_email text,
+  website text,
+  notes text,
+  source text NOT NULL DEFAULT 'manual'
+    CHECK (source IN ('email_sweep','manual','sourcing_agent')),
+  active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- One vendor per (user, case-insensitive name). COALESCE folds local mode's
+-- NULL user_id into a single namespace — a plain unique index would treat
+-- every NULL as distinct and allow duplicates.
+CREATE UNIQUE INDEX IF NOT EXISTS vendors_user_lower_name
+  ON vendors ((COALESCE(user_id::text, '')), lower(name));
+
 CREATE TABLE IF NOT EXISTS project_specs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -25,15 +46,18 @@ CREATE TABLE IF NOT EXISTS project_specs (
 
 CREATE TABLE IF NOT EXISTS line_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  project_id uuid REFERENCES projects(id) ON DELETE CASCADE,  -- NULL = one-off master-list part (e.g. swept purchase history)
+  user_id uuid REFERENCES users(id),          -- owner scope for one-offs; NULL in local/owner mode
+  vendor_id uuid REFERENCES vendors(id),
   description text NOT NULL,
   part_number text,
-  vendor text,
+  vendor text,                                -- back-compat display name; vendor_id is canonical
   product_url text,
   qty int NOT NULL DEFAULT 1,
   unit_price numeric(10,2),
-  status text NOT NULL DEFAULT 'needed'
-    CHECK (status IN ('needed','researching','ordered','shipped','delivered','issue')),
+  active boolean NOT NULL DEFAULT true,       -- false = replaced/hidden, kept for history
+  status text NOT NULL DEFAULT 'researching'
+    CHECK (status IN ('researching','rfq','po_placed','delivered')),
   source text NOT NULL DEFAULT 'manual'
     CHECK (source IN ('manual','search','email')),
   ordered_at timestamptz,
@@ -48,6 +72,7 @@ CREATE TABLE IF NOT EXISTS line_item_options (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   line_item_id uuid NOT NULL REFERENCES line_items(id) ON DELETE CASCADE,
   project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  vendor_id uuid REFERENCES vendors(id),
   vendor text NOT NULL,
   part_number text,
   product_url text,
@@ -66,7 +91,8 @@ CREATE TABLE IF NOT EXISTS line_item_options (
 CREATE TABLE IF NOT EXISTS order_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   line_item_id uuid REFERENCES line_items(id) ON DELETE SET NULL,
-  project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  project_id uuid REFERENCES projects(id) ON DELETE CASCADE,  -- NULL = event on a one-off master-list item
+  user_id uuid REFERENCES users(id),          -- owner scope for one-off events; NULL in local/owner mode
   vendor text NOT NULL,
   order_number text,
   event text NOT NULL
@@ -86,6 +112,7 @@ CREATE TABLE IF NOT EXISTS order_events (
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_specs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE line_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_events ENABLE ROW LEVEL SECURITY;
@@ -108,20 +135,33 @@ CREATE POLICY projects_own ON projects FOR ALL
   USING (user_id IN (SELECT id FROM users WHERE pg_role = current_user))
   WITH CHECK (user_id IN (SELECT id FROM users WHERE pg_role = current_user));
 
+DROP POLICY IF EXISTS vendors_own ON vendors;
+CREATE POLICY vendors_own ON vendors FOR ALL
+  USING (user_id IN (SELECT id FROM users WHERE pg_role = current_user))
+  WITH CHECK (user_id IN (SELECT id FROM users WHERE pg_role = current_user));
+
 DROP POLICY IF EXISTS project_specs_own ON project_specs;
 CREATE POLICY project_specs_own ON project_specs FOR ALL
   USING (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user))
   WITH CHECK (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user));
 
+-- One-off master-list items have no project; they scope through their own
+-- user_id (stamped at insert), project items through the project as before.
 DROP POLICY IF EXISTS line_items_own ON line_items;
 CREATE POLICY line_items_own ON line_items FOR ALL
-  USING (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user))
-  WITH CHECK (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user));
+  USING (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user)
+         OR (project_id IS NULL AND user_id IN (SELECT id FROM users WHERE pg_role = current_user)))
+  WITH CHECK (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user)
+         OR (project_id IS NULL AND user_id IN (SELECT id FROM users WHERE pg_role = current_user)));
 
+-- Events on one-off items (no project) scope through their own user_id,
+-- mirroring line_items_own above.
 DROP POLICY IF EXISTS order_events_own ON order_events;
 CREATE POLICY order_events_own ON order_events FOR ALL
-  USING (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user))
-  WITH CHECK (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user));
+  USING (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user)
+         OR (project_id IS NULL AND user_id IN (SELECT id FROM users WHERE pg_role = current_user)))
+  WITH CHECK (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user)
+         OR (project_id IS NULL AND user_id IN (SELECT id FROM users WHERE pg_role = current_user)));
 
 DROP POLICY IF EXISTS line_item_options_own ON line_item_options;
 CREATE POLICY line_item_options_own ON line_item_options FOR ALL

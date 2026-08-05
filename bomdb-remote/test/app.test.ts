@@ -67,6 +67,29 @@ test('tools/list exposes real bomdb ops plus ping', async () => {
   const names = msg.result.tools.map((t: { name: string }) => t.name);
   assert.ok(names.includes('create_project'), `missing create_project in ${names}`);
   assert.ok(names.includes('ping'), `missing ping in ${names}`);
+  // vendor-CRM redesign ops ride along automatically
+  for (const op of ['upsert_vendor', 'list_vendors', 'set_item_active', 'rename_project']) {
+    assert.ok(names.includes(op), `missing ${op} in ${names}`);
+  }
+  // no tool description still speaks the retired status names
+  for (const t of msg.result.tools as { name: string; description: string }[]) {
+    assert.doesNotMatch(t.description, /"needed"|"ordered"|status "shipped"|status "issue"/,
+      `${t.name} description mentions a retired status`);
+  }
+});
+
+test('upsert_vendor and list_vendors round-trip through HTTP', async () => {
+  const create = await rpc(`/mcp/${TOKEN}`, {
+    jsonrpc: '2.0', id: 10, method: 'tools/call',
+    params: { name: 'upsert_vendor', arguments: { name: 'HTTP Vendor Co', domains: ['httpvendor.example'] } },
+  });
+  assert.equal(create.status, 200);
+  const list = await rpc(`/mcp/${TOKEN}`, {
+    jsonrpc: '2.0', id: 11, method: 'tools/call',
+    params: { name: 'list_vendors', arguments: {} },
+  });
+  const msg = parseSse(await list.text());
+  assert.ok(msg.result.content[0].text.includes('HTTP Vendor Co'));
 });
 
 test('create_project then list_projects round-trips through HTTP', async () => {
