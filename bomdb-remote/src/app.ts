@@ -6,7 +6,7 @@ import type { Engine } from '../../bomdb/src/engine.ts';
 import { operations, runOp } from '../../bomdb/src/operations.ts';
 import { buildToolDefs } from '../../bomdb/src/tool-defs.ts';
 import { GET_STARTED_TOOL, getStartedText, EMPTY_WORKSPACE_HINT } from './concierge.ts';
-import { GET_SKILL_TOOL, getSkillText } from './skills.ts';
+import { GET_SKILL_TOOL, getSkillText, getSkillStub } from './skills.ts';
 import { SOURCING_TOOLS, isSourcingTool, callSourcing, sourcingUrl } from './sourcing.ts';
 
 const PING_TOOL = {
@@ -44,7 +44,9 @@ function buildServer(engine: Engine) {
     }
     if (name === 'get_skill') {
       try {
-        const text = await getSkillText(String((params as Record<string, unknown> | undefined)?.name ?? ''));
+        const p = (params ?? {}) as Record<string, unknown>;
+        const skillName = String(p.name ?? '');
+        const text = p.form === 'stub' ? getSkillStub(skillName) : await getSkillText(skillName);
         return { content: [{ type: 'text' as const, text }] };
       } catch (err) {
         return {

@@ -154,7 +154,7 @@ export const operations: Operation[] = [
   },
   {
     name: 'get_project_context',
-    description: 'Everything part-search loads before searching: the project, its specs, and its full BOM (incl. inactive items — check the active flag). Call this FIRST when working on a project.',
+    description: 'Everything part-search loads before searching: the project, its specs, and its full BOM (incl. inactive items — check the active flag). Call this FIRST when working on a project. Before running a part search, also call get_skill("part-search") on this connector and follow the returned playbook (skip only if the part-search skill is already active in this conversation).',
     params: { project_id: { type: 'string', required: true } },
     handler: async (engine, p) => {
       const [project] = await engine.query(`SELECT * FROM projects WHERE id = $1`, [p.project_id]);
@@ -488,7 +488,7 @@ export const operations: Operation[] = [
   },
   {
     name: 'get_dashboard_data',
-    description: 'Aggregated BOM dashboard data: per-project status buckets (Researching = researching+rfq, Ordered = po_placed with a shipped badge derived from order events, Delivered), committed spend, spec coverage, open issues (derived from unresolved issue events), stale ordered items, recent order events, plus the vendor CRM rollup and one-off master-list parts. Inactive items are excluded. Call this before rendering a BOM dashboard or status overview.',
+    description: 'Aggregated BOM dashboard data: per-project status buckets (Researching = researching+rfq, Ordered = po_placed with a shipped badge derived from order events, Delivered), committed spend, spec coverage, open issues (derived from unresolved issue events), stale ordered items, recent order events, plus the vendor CRM rollup and one-off master-list parts. Inactive items are excluded. Call this before rendering a BOM dashboard or status overview — and before rendering, call get_skill("bom-dashboard") on this connector and follow the returned playbook (skip only if the bom-dashboard skill is already active in this conversation).',
     params: { project_id: { type: 'string', description: 'Omit for all projects' } },
     handler: async (engine, p) => {
       const projects = await engine.query<{ id: string; name: string; created_at: string }>(

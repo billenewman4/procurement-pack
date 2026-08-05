@@ -37,10 +37,16 @@ test('new user gets the linear onboarding flow', async () => {
   assert.match(text, /WELCOME, before anything else/);
   assert.match(text, /Ready\? Say continue\./);
   assert.match(text, /Do not fetch\s+skills, call tools/);
-  // step 1a: all four skills via get_skill, before the sweep runs
+  // step 1a: surface-conditional — stub cards on chat, silent skip in Code
   assert.match(text, /get_skill/);
-  assert.match(text, /vendor-sweep, part-search,\s+gmail-orders, bom-dashboard/);
+  assert.match(text, /vendor-sweep,\s+part-search,\s+gmail-orders, bom-dashboard/);
+  assert.match(text, /form 'stub'/);
+  assert.match(text, /never go\s+stale/i);
+  assert.match(text, /Claude Code \(no save cards\): SKIP/);
   assert.match(text, /NEVER fetch skill files from GitHub URLs/);
+  // step 2: live dashboard on publish-capable surfaces, snapshot elsewhere
+  assert.match(text, /dashboard\/vendor-crm-live\.html/);
+  assert.match(text, /claude\.ai\/code/);
   assert.doesNotMatch(text, /raw\.githubusercontent/);
   assert.match(text, /github\.com\/billenewman4\/procurement-pack/);
   assert.ok(

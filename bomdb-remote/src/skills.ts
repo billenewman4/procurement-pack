@@ -12,13 +12,51 @@ const RAW = 'https://raw.githubusercontent.com/billenewman4/procurement-pack/mai
 export const GET_SKILL_TOOL = {
   name: 'get_skill',
   description:
-    `Fetch the CURRENT text of one of this connector's skills (${SKILL_NAMES.join(', ')}) straight from the source repo — always fresh. Use this instead of fetching GitHub skill URLs yourself (web fetches serve stale cached copies), then present a save card from the returned text.`,
+    `Fetch the CURRENT text of one of this connector's playbooks (${SKILL_NAMES.join(', ')}) straight from the source repo — always fresh. Use this instead of fetching GitHub skill URLs yourself (web fetches serve stale cached copies). form 'full' (default) returns the playbook to FOLLOW NOW; form 'stub' returns a tiny save-card version that auto-fetches the current playbook when triggered — use 'stub' when saving skills for the user, never save the full text.`,
   inputSchema: {
     type: 'object' as const,
-    properties: { name: { type: 'string', enum: SKILL_NAMES, description: 'Skill to fetch' } },
+    properties: {
+      name: { type: 'string', enum: SKILL_NAMES, description: 'Playbook to fetch' },
+      form: { type: 'string', enum: ['full', 'stub'], description: "Default 'full'. 'stub' = ten-line save-card pointer that fetches the current playbook on use." },
+    },
     required: ['name'] as string[],
   },
 };
+
+// Trigger descriptions mirror each SKILL.md's frontmatter. The stub a user
+// saves is a pointer, not a copy — content is fetched at use time, so saved
+// cards can never go stale.
+const STUB_DESCRIPTIONS: Record<string, string> = {
+  'vendor-sweep':
+    'Use when building or refreshing the user\'s vendor list from purchase history in email — "set up my vendors", "scan my email for vendors", "who do I buy from" — or when invoked by the bomdb onboarding flow. Read-only until the user confirms.',
+  'part-search':
+    'Use when the user wants to find, source, compare, or buy a physical part or component — screws, fasteners, connectors, circuit boards, sensors, converters, raw material — or asks "where can I get X", mentions McMaster/Digi-Key/Amazon/Mouser, or is building a BOM.',
+  'gmail-orders':
+    'Use when checking email for purchase/order updates — order confirmations, shipping notices, delivery notices, backorders — or when the user asks "what\'s the status of my orders", "did everything ship", or wants the BOM/order tracker reconciled with their inbox.',
+  'bom-dashboard':
+    'Use when the user asks to see their BOM, project status, dashboard, spending, order pipeline, vendors, or "show me where everything is" — renders their procurement data from the BOM database.',
+};
+
+export function getSkillStub(name: string): string {
+  if (!SKILL_NAMES.includes(name)) {
+    throw new Error(`unknown skill "${name}" — valid: ${SKILL_NAMES.join(', ')}`);
+  }
+  return `---
+name: ${name}
+description: ${STUB_DESCRIPTIONS[name]}
+---
+
+This skill is a pointer — its real content lives on the user's BOM
+connector and is always current there.
+
+When this skill triggers: call the connector tool \`get_skill\` with
+\`{"name": "${name}"}\` and follow the returned playbook exactly. Never
+proceed from memory of a previous version, and never fetch skill files
+from GitHub URLs (web fetches serve stale copies). If the BOM connector
+is unavailable in this conversation, say so and stop — this skill cannot
+run without it.
+`;
+}
 
 // 60s cache: keeps a burst of four onboarding fetches to four upstream
 // calls, without ever serving meaningfully stale text.

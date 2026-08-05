@@ -96,18 +96,22 @@ skills, call tools, or ask anything else in this message.
 STEP 1 — on their go-ahead ("continue" counts as email consent — the
 welcome told them exactly what you'll scan). Two things, in this order,
 in one turn:
-  a. Skills first, so they have something to do while you dig: call
-     the get_skill tool four times — vendor-sweep, part-search,
-     gmail-orders, bom-dashboard — and present a save card for each
-     from the returned text. NEVER fetch skill files from GitHub URLs
-     yourself: web fetches serve stale cached copies; get_skill is
-     always the current version. One line: "Save these while I go
-     through your email — they take effect in your next chat." The
-     set lives at ${REPO}, but get_skill is the only read path.
-     Absence from your catalog is exactly why you package it, never a
-     reason to skip; the only skip is a skill already active in this
-     conversation. Never claim the skills step is done until they
-     confirm Save.
+  a. Skills — SURFACE-CONDITIONAL, decide by where you are:
+     · Chat surface that can save skills (claude.ai, Cowork): call
+       get_skill with form 'stub' four times — vendor-sweep,
+       part-search, gmail-orders, bom-dashboard — and present a save
+       card for each stub. Stubs are pointers that auto-fetch the
+       current playbook when they trigger, so saved cards never go
+       stale. One line: "Save these while I go through your email —
+       they take effect in your next chat." Never save full playbook
+       text as a card; never claim this step done until they confirm
+       Save.
+     · Claude Code (no save cards): SKIP this step entirely — say
+       nothing about skills. Playbooks arrive automatically via
+       get_skill whenever needed; there is nothing to install.
+     Either way: NEVER fetch skill files from GitHub URLs (web fetches
+     serve stale cached copies; get_skill is the only read path — the
+     set lives at ${REPO} for reference only).
   b. Then, same turn, run the sweep: follow the vendor-sweep skill you
      just fetched (its text is already in this conversation — use it
      even though the saved card activates next chat). Present findings
@@ -127,7 +131,17 @@ alternatives, one line each:
   - Start clean — create a project whenever you're ready.
 
 STEP 2 — TWO OFFERS, one line each, then stop:
-  - Dashboard: say "show me my BOM" any time.
+  - Dashboard — surface-conditional:
+    · If this session can publish artifacts with capability manifests
+      (Claude Code, incl. claude.ai/code): offer their personal LIVE
+      dashboard — download dashboard/vendor-crm-live.html from the
+      repo (raw.githubusercontent, via shell/curl — NOT a web-fetch
+      tool) and publish it per dashboard/README.md with the BOM
+      Manager manifest; they bookmark the URL forever. Buttons write
+      real statuses.
+    · Otherwise: say "show me my BOM" any time (view-only render);
+      one extra line: "Want the version with working buttons? Open
+      claude.ai/code once and say: publish my live BOM dashboard."
   - Weekday morning digest — order tracking on autopilot. On yes,
     create a scheduled task (weekdays, 8am their time) whose prompt is
     EXACTLY the text between the --- markers. If you cannot create
@@ -180,9 +194,12 @@ function briefing(data: DashboardData): string {
   lines.push('part-search, gmail-orders, bom-dashboard) are active in this');
   lines.push('conversation and this surface can save skills, offer once, one');
   lines.push('line: "Want the full toolkit here too? I can set up 4 skills —');
-  lines.push('dashboards, part search, order tracking." On yes, call get_skill');
-  lines.push('for each and present save cards. Never repeat the offer if');
-  lines.push('declined, and skip it entirely when a skill is already active.');
+  lines.push('dashboards, part search, order tracking." On yes: get_skill with');
+  lines.push('form \'stub\' for each, present save cards (stubs auto-fetch the');
+  lines.push('current playbook on use — never save full text). Never repeat if');
+  lines.push('declined; skip entirely when a skill is already active. On');
+  lines.push('surfaces with no skill saving (Claude Code), skip silently —');
+  lines.push('playbooks arrive via get_skill as needed.');
   lines.push('');
   if (nudges.length) {
     lines.push('NUDGES (mention at most two, only when relevant to what the user asked):');
