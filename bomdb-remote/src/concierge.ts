@@ -4,6 +4,7 @@
 // not to be recited verbatim to the user.
 import type { Engine } from '../../bomdb/src/engine.ts';
 import { runOp } from '../../bomdb/src/operations.ts';
+import { sourcingUrl } from './sourcing.ts';
 
 const RAW = 'https://raw.githubusercontent.com/billenewman4/procurement-pack/main';
 const REPO = 'https://github.com/billenewman4/procurement-pack';
@@ -55,6 +56,20 @@ prompts.
    event — use the stale_orders tool; worth a vendor nudge).
 4. If nothing moved, say so in one line and stop.`;
 
+// Only appended when SOURCING_AGENT_URL is set — same gate the sourcing
+// relay itself uses, so the script never tells Claude to call a tool that
+// won't be advertised. Fire-and-forget per connect_vendor's own etiquette:
+// no polling machinery, no job_id storage (no natural home for it yet).
+const CONNECT_VENDOR_STEP = `
+  c. Sourcing recon (deep-sourcing is enabled on this connector): for each
+     vendor you just wrote above that has no sourcing_slug yet, call
+     connect_vendor with [{name, domain}] built from that vendor's name
+     and the first entry in its domains. This is fire-and-forget — recon
+     runs in the background, do NOT wait for it or poll. When it returns,
+     store each vendor_slug on the matching vendor via
+     upsert_vendor(name, sourcing_slug). Skip vendors that already have a
+     sourcing_slug.`;
+
 function newUserScript(): string {
   return `[bomdb concierge — NEW USER, empty workspace]
 
@@ -105,7 +120,7 @@ in one turn:
      name for auto-link, NO project_id — historical purchases are
      one-offs — source 'email'; status per the sweep skill's rules:
      'delivered' only if it actually arrived, in-flight orders get
-     'po_placed' plus a shipped order event).
+     'po_placed' plus a shipped order event).${sourcingUrl() ? CONNECT_VENDOR_STEP : ''}
 No Gmail access, or the sweep finds nothing? Offer exactly two
 alternatives, one line each:
   - Paste or upload a parts list (Excel, CSV, messy text is fine) —

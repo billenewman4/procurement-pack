@@ -97,3 +97,34 @@ test('swept user (vendors + one-offs, no projects) is returning, not new', async
   assert.match(text, /McMaster-Carr/);
   assert.match(text, /ONE-OFFS: 1/);
 });
+
+test('new-user script has no connect_vendor step when sourcing is not configured', async () => {
+  const saved = process.env.SOURCING_AGENT_URL;
+  delete process.env.SOURCING_AGENT_URL;
+  try {
+    const text = await getStartedText(empty);
+    assert.doesNotMatch(text, /connect_vendor/);
+  } finally {
+    process.env.SOURCING_AGENT_URL = saved;
+  }
+});
+
+test('new-user script adds a fire-and-forget connect_vendor step when sourcing is configured', async () => {
+  const saved = process.env.SOURCING_AGENT_URL;
+  process.env.SOURCING_AGENT_URL = 'http://127.0.0.1:1/mcp/fake-token';
+  try {
+    const text = await getStartedText(empty);
+    assert.match(text, /connect_vendor/);
+    assert.match(text, /sourcing_slug/);
+    assert.match(text, /do NOT wait for it or poll/);
+    // lands after the vendor/line-item writes, still inside step 1
+    assert.ok(
+      text.indexOf('upsert_vendor per vendor, then upsert_line_item per part') < text.indexOf('connect_vendor with'),
+      'connect_vendor step should follow the vendor/line-item writes');
+    assert.ok(
+      text.indexOf('connect_vendor with') < text.indexOf('STEP 2'),
+      'connect_vendor step should stay inside step 1, before step 2');
+  } finally {
+    process.env.SOURCING_AGENT_URL = saved;
+  }
+});
