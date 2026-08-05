@@ -11,9 +11,11 @@ One consistent, glanceable artifact for "show me my BOM." Data comes from the
 database — never from memory or the conversation. Layout and colors are fixed
 so every render looks like the same product; only the data changes.
 
-The organizing idea: **what am I still deciding, what's on its way, what's on
-my bench** — three lifecycle tabs — plus **who I buy from** — a Vendors tab.
-One on screen at a time, so no tab fights the others for attention.
+The organizing idea, in two tabs: **Active BOM** — every part, grouped by
+project and broken down by lifecycle stage — and **Vendors** — who they buy
+from. The page renders instantly from a baked-in snapshot, then upgrades
+itself to live data and working buttons wherever the artifact MCP bridge
+exists.
 
 ## Step 1 — Load the data
 
@@ -23,187 +25,185 @@ in a single call — don't also call `list_vendors`. Every number shown must
 come from this response. No projects and no vendors → don't render an empty
 dashboard; offer to set things up instead.
 
-**Then call `list_options` for each item landing in the Researching tab.**
+**Then call `list_options` for each `researching`/`rfq` item.**
 `get_dashboard_data` silently drops `rejected` options; `list_options` returns
 all of them. The rejected ones are the record of what was weighed and why —
-fetch them. Don't call it for Ordered or Delivered items; those decisions are
+fetch them. Don't call it for ordered or delivered items; those decisions are
 settled.
 
-## Step 2 — Map the data onto four tabs
+## Step 2 — Shape of the page
 
 | Tab | Contents |
 |---|---|
-| **Researching** | `researching` + `rfq` — not ordered yet; the working list. An `rfq` item shows a pending-quote placeholder tile. |
-| **Ordered** | `po_placed` — money spent, part not here. `shipped: true` (event-derived) is a badge on the row, never a tab. |
-| **Delivered** | `delivered` — on the bench. |
-| **Vendors** | The vendor CRM rollup. Not a lifecycle stage. |
+| **Active BOM** | One section per project. Inside each section, three status groups in order: Researching (`researching` + `rfq`), Ordered (`po_placed`), Delivered (`delivered`). After the last project, a **Purchase history** section holds `one_offs`, grouped the same way. |
+| **Vendors** | The vendor CRM rollup table. Not a lifecycle stage — no swatch. |
 
-**One-offs live in the lifecycle tabs too.** Every `one_offs` item lands in
-the tab its status says — delivered one-offs in Delivered (grouped under a
-muted "Purchase history" heading below any project group), an in-flight
-one-off in Ordered like any other row. Tab count pills include them. A user
-whose whole workspace came from the email sweep must see a full Delivered
-tab and live tiles — not three zeros and a header claiming "6 parts".
+A group that would be empty isn't rendered. Tab count pills: Active BOM =
+all items including one-offs; Vendors = vendor count. A user whose whole
+workspace came from the email sweep must see a full page and live tiles —
+never zeros with a header claiming "6 parts".
 
 `shipped` and `issue` are order events, not statuses. Each item carries
-`open_issue` (an issue event with no later shipped/delivered) — that's the
-only issue signal; expect it on Ordered rows, since delivered items can't
-have one. Inactive items and vendors are already excluded upstream. Never
-invent a fifth tab.
+`shipped` and `open_issue` flags (event-derived) — badges on the row, never
+groups or tabs. Inactive items and vendors are excluded upstream. Never
+invent a third tab.
 
 ## Step 3 — Render ONE self-contained HTML artifact
 
 Single file, inline CSS/JS, no external resources — the sandbox blocks all
-network. Tabs are **CSS-only**: hidden radio inputs plus `:checked ~` sibling
-selectors. JavaScript exists for exactly one reason — the action buttons
-below — and the page must read complete with scripting off or the bridge
+network. Bake the Step-1 data into the page as `const SNAPSHOT = {...}` and
+render from it immediately; the live bridge (below) then keeps it fresh where
+available. The page must read complete with scripting off or the bridge
 absent.
 
 Responsive: relative units, `max-width: 100%`, every table in its own
 `overflow-x: auto` container so the page never scrolls horizontally.
 
-**Theme-aware, both modes styled** via `@media (prefers-color-scheme: dark)`
-plus `:root[data-theme="dark"]` / `:root[data-theme="light"]` overrides.
-Surfaces: light `#fcfcfb`, dark `#1a1a19`. Text in neutral ink, never a data
-color.
+**Theme-aware, both modes styled**, token-level: define custom properties on
+`:root`, redefine under `@media (prefers-color-scheme: dark)`, then again
+under `:root[data-theme="dark"]` and `:root[data-theme="light"]` so the
+viewer's toggle wins both ways. Style components only through the tokens.
 
-### Colors
+### Tokens
 
-Three-step ordinal ramp, one per lifecycle tab — validated, do not substitute:
+Grounds — light: page `#fafbfc`, card `#ffffff`, border `#e3e8ee`, ink
+`#16202b`, muted `#5a6b7d` / `#8b98a8`. Dark: page `#10161d`, card
+`#1a222c`, border `#2a3542`, ink `#e8edf3`, muted `#a7b4c2` / `#6e7d8d`.
+Text always in ink tokens, never a data color.
+
+Status ramp, one hue light→dark — validated, do not substitute:
 
 - Light: researching `#5598e7`, ordered `#2a78d6`, delivered `#104281`
-- Dark: researching `#6da7ec`, ordered `#3987e5`, delivered `#184f95`
+- Dark: researching `#6da7ec`, ordered `#3987e5`, delivered `#8fb4e2`
 
-Vendors is not a lifecycle stage: no swatch, no fourth ramp step.
+Every status use carries a text label (group heading, chip text) — the ramp
+steps are close by design and color is never the only signal. The light
+researching blue never sets text.
 
-Critical red `#d03b3b` is reserved for open issues — the issue tile dot and
-the `issue` chip. Nowhere else, ever, including decoration and buttons. There
-is no orange in this design.
+Critical red `#d03b3b` (dark `#e05d5d`) is reserved for open issues — the
+issue tile dot and the `issue` chip. Nowhere else, ever, including buttons.
+No orange in this design.
+
+Type: system UI stack; monospace (system mono) for numbers, part numbers,
+timestamps, count pills — with `font-variant-numeric: tabular-nums`.
 
 ### Layout, top to bottom
 
-1. **Header** — project name (or "All projects"), then a muted line: part
-   count and "as of <timestamp>". Data is a snapshot; say when it was taken.
+1. **Header** — "Vendor CRM" (or the project name), plus a small connection
+   line: a dot + "live · updated HH:MM" when the bridge is feeding data,
+   "snapshot · as of <timestamp>" otherwise. Data always says when it's from.
 
 2. **Stat tiles** — exactly three, one row, wrapping on narrow:
    Committed `$X.YZ` · In hand `n/total` · Open issues `n`.
-   Big number, small uppercase muted label. The issue tile gets a small red
-   dot beside the number when `n > 0`; the number stays in ink. Tiles count
-   ALL items — projects and one-offs alike: Committed = po_placed +
-   delivered spend, In hand = delivered / all. Purchase history is real
-   money and real parts; a sweep-only workspace shows its true totals.
+   Big mono number, small uppercase muted label. The issue tile gets a small
+   red dot beside the number when `n > 0`; the number stays in ink. Tiles
+   count ALL items — projects and one-offs alike: Committed = po_placed +
+   delivered spend, In hand = delivered / all.
 
-3. **Tab strip** — four labels, each with a count pill; the three lifecycle
-   labels get their color swatch. Researching is the default checked tab.
-   Active tab: ink text, 2px bottom border; the rest muted.
+3. **Tab strip** — two labels with mono count pills. Active tab: ink text,
+   2px bottom border; the rest muted. Buttons with `role="tab"`, visible
+   focus ring.
 
-4. **Tab panels** — each opens with one muted sentence of context. Rendering
-   all projects: group rows/cards by project with a muted project heading.
+4. **Tab panels.** Nothing after them — no pipeline bar, no activity feed.
 
-Nothing after the panels — no pipeline bar, no activity feed.
+### Active BOM panel
 
-### The Researching panel — cards, not rows
+Per project: an `h2` with the project name, a muted subline ("n parts ·
+m open"), then the status groups. Group heading: 9px color swatch + uppercase
+label + count ("RESEARCHING · 3"). Rows live in one bordered card per group,
+hairline-separated:
 
-One card per item:
+- **Left rail**: 3px, full row height, in the row's status color.
+- **Main**: bold description (anchor to `product_url` when present — links
+  can't open in the sandbox, but they copy/drag fine); muted mono subline:
+  part number · vendor · ETA (ordered rows) or date (delivered rows).
+- **Right**: mono `qty × $unit`; then badges — `shipped` chip when shipped,
+  red-outlined `issue` chip when `open_issue`; then the row's action button.
 
-- **Title**: short part name + `· qty n`
-- **Why line**: one muted sentence — what it's for, or what turns on the choice
-- **Lead line**: extended price bold, then `n × $unit · Vendor` muted
-- **Options block** after a hairline rule: heading `3 options` (`· decided`
-  when one is `selected`), then one small tile per option, wrapping.
+Researching rows additionally show their **options block** under the main
+line, after a hairline rule: one small tile per option, wrapping. Each tile:
+vendor + part number (anchor), `$unit ea` + availability muted, one-line
+`fit_notes`. `selected` → border in the researching blue + `chosen` tag; none
+selected → tag the best fit `leading`; `rejected` → ~62% opacity + `ruled
+out` tag. Dimmed, not deleted — "what we didn't buy and why" is the whole
+argument for a database over a spreadsheet. An `rfq` item gets one
+placeholder tile — quote id, "not yet priced", and a plain note that
+Committed understates the build.
 
-Each option tile:
+The **Purchase history** section (one-offs) renders identically, subline
+"One-off orders, not tied to a project".
 
-- Vendor + part number as an anchor to `product_url` with a `↗` affordance
-  (links can't open in the sandbox's own tab rules — keep them anyway; they
-  copy/drag fine).
-- Price line: `$unit ea` + availability, muted, tabular numerals. Derived
-  units where they aid comparison ($/ft for wire).
-- One-line `fit_notes` — the tradeoff, not a spec dump.
-- `selected`: border in the researching blue + `chosen` tag; nothing selected
-  → tag the best fit `leading`.
-- `rejected`: ~62% opacity + `ruled out` tag. Dimmed, not deleted — "what we
-  didn't buy and why" is the whole argument for a database over a spreadsheet.
-
-An `rfq` item gets one placeholder tile — quote id, start time, what was
-asked — priced "not yet priced", with a plain note that Committed understates
-the build.
-
-### The Ordered and Delivered panels — tables
-
-- **Ordered**: Part · Vendor · Qty · Total · Status.
-  Status cell = uppercase chip: `po placed`, or `shipped` with a 🚚 when
-  `shipped: true`; then ETA. Items in `stale_items` add a muted
-  "no update in 7+ days". `open_issue` → red-outlined `issue` chip first.
-- **Delivered**: Part · Vendor · Qty · Total · Note.
-  Note shows `outcome` + `outcome_notes` when set, else `notes`.
-
-Part cell: bold description, muted sub-line with part number and the one-line
-reason chosen. Vendor links to `product_url`. Each table ends with a `tfoot`
-subtotal — "In flight" / "In hand".
-
-### The Vendors panel — the CRM
+### Vendors panel
 
 Table: Vendor · Parts bought · Open · Last activity. Vendor cell: bold name
-(anchor to `website` when present), muted sub-line naming up to three recent
-parts. `part_count`, `open_items`, `last_activity` come straight off the
-rollup.
+(anchor to `website` when present), muted mono sub-line with the vendor's
+`domains`. Numeric columns right-aligned mono. `part_count`, `open_items`,
+`last_activity` come straight off the rollup. One-offs do NOT get a duplicate
+table here — the Vendors tab is the who, Active BOM is the what.
 
-One-offs do NOT get a duplicate table here — they live in the lifecycle
-tabs (see Step 2). The Vendors tab is the who, the lifecycle tabs are the
-what.
+### Live bridge + action buttons
 
-### Action buttons — the MCP bridge
+The single connector name is **`BOM Manager`** — hardcode it; never declare
+or address two names. Feature-detect with the member check only
+(`window.claude?.mcp`), never a probing call. Without the bridge the page
+stays a readable snapshot: write-back buttons hidden, copy buttons working.
+Never a broken button.
 
-Published artifacts can call the viewer's connectors via `window.claude.mcp`
-(per-viewer consent, viewer's own credentials). Buttons are recessive:
-hairline border, muted ink, no data colors. Feature-detect — write-back
-buttons are hidden unless the bridge exists; copy buttons always work. Never
-a broken button.
+Boot:
+
+```js
+const SERVER = 'BOM Manager', DASH = 'get_dashboard_data';
+render(SNAPSHOT);                                   // instant, bridge or not
+const MCP = () => window.claude?.mcp;
+if (MCP()) {
+  document.documentElement.classList.add('live');   // CSS reveals .act buttons
+  MCP().listTools().then(r => {
+    const ok = (r.servers || []).some(s => s.server === SERVER && s.tools?.length);
+    if (!ok) return conn('Add "BOM Manager" in claude.ai Settings → Connectors');
+    MCP().watchTool(SERVER, DASH, INPUT, ev => {    // INPUT: {project_id} or {}
+      if (ev.type === 'data') { patch(ev.result.payload); stamp(ev.result.cache?.storedAt); }
+      else if (['needs_reauth','server_not_connected'].includes(ev.error.code))
+        conn('Reconnect "BOM Manager" in claude.ai Settings → Connectors');
+      // other errors: keep last-good page, note "live refresh failing" once
+    }, { cache: { staleTime: 30_000 }, refetchInterval: 60_000 });
+  }).catch(() => {});                               // listTools failed → snapshot mode
+}
+```
+
+Buttons are recessive: hairline border, muted ink, no data colors.
 
 | Button | Where | Call |
 |---|---|---|
 | Choose | option tile | `select_option {option_id, project_id}` |
-| Ordered it | researching card | `update_status {line_item_id, status:'po_placed'}` |
-| Source this part | researching card | clipboard — sourcing prompt (below) |
-| Remove | researching card | `set_item_active {line_item_id, active:false}` |
+| Mark ordered | researching row | `update_status {line_item_id, status:'po_placed'}` |
+| Source this part | researching row | clipboard — sourcing prompt (below) |
+| Remove | researching row | `set_item_active {line_item_id, active:false}` |
 | Mark delivered | ordered row | `update_status {line_item_id, status:'delivered'}` |
 | Record issue | ordered row | `record_order_event` — reveal an inline one-line input first |
 
 ```js
-const MCP = () => window.claude?.mcp;              // member check only — never probe with a call
-if (MCP()) document.documentElement.classList.add('live');  // CSS: .act hidden unless .live
-
-async function act(btn, tool, input) {             // every write-back button funnels here
-  btn.disabled = true; const old = btn.textContent; btn.textContent = '…';
+async function act(btn, tool, input) {              // every write-back funnels here
+  btn.disabled = true; const old = btn.textContent; btn.textContent = 'Saving…';
   try {
-    await MCP().callTool('BOM Manager', tool, input);
-    await MCP().invalidate('BOM Manager', 'get_dashboard_data').catch(() => {});
-    btn.textContent = 'done ✓';
+    await MCP().callTool(SERVER, tool, input);
+    await MCP().invalidate(SERVER, DASH).catch(() => {});  // watch refetches + patches
+    btn.textContent = 'Saved';
   } catch (e) {
-    btn.textContent = old; btn.disabled = false;
-    note(btn, e.code === 'needs_reauth' || e.code === 'server_not_connected'
-      ? 'Reconnect BOM Manager in claude.ai Settings → Connectors'
-      : (e.message || e.code));                    // note() = one muted line under the button row
+    btn.disabled = false; btn.textContent = old;
+    note(btn, e.code === 'tool_error' ? (e.message || 'Update rejected.')
+      : ['server_unavailable','upstream_error'].includes(e.code)
+        ? 'Couldn’t confirm the update reached the server — check after the next refresh before retrying.'
+      : ['needs_reauth','server_not_connected'].includes(e.code)
+        ? 'Reconnect "BOM Manager" in claude.ai Settings → Connectors'
+      : (e.message || e.code));                     // note(): one muted line under the row, auto-clears
   }
 }
-// Record issue: act(btn, 'record_order_event', { project_id, line_item_id, vendor,
-//   event: 'issue', event_at: new Date().toISOString(), raw_summary: inputValue })
 ```
 
-Stay current: stamp `data-item="<id>"` on rows/cards and `data-opt="<id>"` on
-option tiles, then watch the dashboard data and **patch** — tiles, count
-pills, chips/badges, moved or dimmed rows. A slim patch function, not a
-client-side re-render; the artifact is a rendered snapshot with live buttons,
-not an app.
-
-```js
-if (MCP()) MCP().watchTool('BOM Manager', 'get_dashboard_data',
-  PROJECT_ID ? { project_id: PROJECT_ID } : null,
-  ev => { if (ev.type === 'data') patch(ev.result.payload); });  // errors: keep last-good page
-// watch registration failed? fall back after each write:
-// callTool('BOM Manager','get_dashboard_data', input, {cache:{refresh:true}}) → patch
-```
+`patch()` stays slim: stamp `data-item="<id>"` on rows and `data-opt="<id>"`
+on option tiles, then update tiles, count pills, chips/badges, and move or
+dim rows. Not a client-side re-render — the artifact is a rendered document
+with live corrections, not an app.
 
 **Source this part** needs a fresh Claude session, which an artifact cannot
 launch (no popups, no links out, no `claude://`) — so it copies a ready
@@ -211,7 +211,7 @@ prompt and hints "paste into a new Claude chat". Published artifacts are
 denied `navigator.clipboard`, hence the cascade:
 
 ```js
-function copyPrompt(btn, text) {                   // writeText → execCommand → select-text
+function copyPrompt(btn, text) {                    // writeText → execCommand → select-text
   const ok = () => { btn.textContent = 'copied ✓'; setTimeout(() => btn.textContent = 'copy prompt', 1500); };
   (navigator.clipboard?.writeText(text) ?? Promise.reject()).then(ok).catch(() => {
     const ta = Object.assign(document.createElement('textarea'), { value: text });
@@ -224,7 +224,7 @@ function copyPrompt(btn, text) {                   // writeText → execCommand 
 }
 ```
 
-Prompt template (one per card, in the hidden `.prompt`):
+Prompt template (one per researching row, in the hidden `.prompt`):
 `Source this part: <description> (qty n) for project "<name>"
 (project_id <pid>, line_item_id <id>). Spec: <why line>. Use part-search and
 store the top 2–3 options with add_line_item_option.`
@@ -246,14 +246,17 @@ layout or repeat numbers on screen.
 
 Deliver with SendUserFile, persist with `create_artifact`; later renders of
 the same project `update_artifact` in place. Where those tools don't exist,
-save the HTML file and tell the user where it is. If the publish surface takes
-a capability manifest, declare the minimal grant:
+save the HTML file and tell the user where it is. If the publish surface
+takes a capability manifest, declare the minimal single-server grant —
+exactly one connector, never two:
 `mcp: {servers: [{server: 'BOM Manager', tools: ['get_dashboard_data',
 'update_status', 'record_order_event', 'select_option', 'set_item_active']}]}`.
 
 Tell the user two things, once:
 
 - First open shows a one-time "this artifact uses BOM Manager" consent;
-  declining blanks the page until reload — expected, not broken.
+  declining blanks the page until reload — expected, not broken. Their
+  connector must be named exactly `BOM Manager` for live mode; any other
+  name falls back to the snapshot.
 - The artifact can't be shared by public link — every viewer needs the
   connector.
