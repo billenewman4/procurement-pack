@@ -29,7 +29,7 @@ before(async () => {
     await engine.query(`GRANT USAGE ON SCHEMA public TO ${who}_r`);
     await engine.query(`GRANT SELECT ON users TO ${who}_r`);
     await engine.query(
-      `GRANT SELECT, INSERT, UPDATE ON projects, project_specs, line_items, order_events TO ${who}_r`);
+      `GRANT SELECT, INSERT, UPDATE ON projects, project_specs, line_items, order_events, line_item_options, vendors TO ${who}_r`);
     await engine.query(
       `INSERT INTO users (name, email, sharing, pg_role) VALUES ($1, $2, 'hosted', $3)`,
       [who, `${who}@example.com`, `${who}_r`]);
@@ -43,7 +43,7 @@ before(async () => {
   bobProject = await asRole('bob_r', async () => {
     const p = await runOp(engine, 'create_project', { name: 'bob-proj' }) as { id: string };
     const li = await runOp(engine, 'upsert_line_item', {
-      project_id: p.id, description: 'bob part', status: 'ordered',
+      project_id: p.id, description: 'bob part', status: 'po_placed', vendor: 'BobVendorCo',
     }) as { id: string };
     bobItem = li.id;
     return p.id;
@@ -93,22 +93,66 @@ test('cannot write specs, items, or events into another user\'s project', async 
   });
 });
 
-test('cannot move another user\'s line item through update_status or set_outcome', async () => {
+test('cannot move another user\'s line item through update_status, set_outcome, or set_item_active', async () => {
   await asRole('alice_r', async () => {
     const st = await runOp(engine, 'update_status', {
-      line_item_id: bobItem, status: 'shipped',
+      line_item_id: bobItem, status: 'delivered',
     }) as { error?: string };
     assert.match(st.error ?? '', /not found/);
     const oc = await runOp(engine, 'set_outcome', {
       line_item_id: bobItem, outcome: 'failed',
     }) as { error?: string };
     assert.match(oc.error ?? '', /not found/);
+    const act = await runOp(engine, 'set_item_active', {
+      line_item_id: bobItem, active: false,
+    }) as { error?: string };
+    assert.match(act.error ?? '', /not found/);
   });
   // and bob's item is untouched
-  const [row] = await engine.query<{ status: string; outcome: string | null }>(
-    `SELECT status, outcome FROM line_items WHERE id = $1`, [bobItem]);
-  assert.equal(row.status, 'ordered');
+  const [row] = await engine.query<{ status: string; outcome: string | null; active: boolean }>(
+    `SELECT status, outcome, active FROM line_items WHERE id = $1`, [bobItem]);
+  assert.equal(row.status, 'po_placed');
   assert.equal(row.outcome, null);
+  assert.equal(row.active, true);
+});
+
+test('vendors are isolated: alice cannot see, match, or rename bob\'s vendor', async () => {
+  await asRole('alice_r', async () => {
+    const seen = await runOp(engine, 'list_vendors', { include_inactive: true }) as { name: string }[];
+    assert.equal(seen.length, 0, 'alice should see no vendors yet');
+    // same name upserts a NEW vendor for alice, not a merge into bob's
+    const mine = await runOp(engine, 'upsert_vendor', { name: 'BobVendorCo' }) as { id: string; user_id: string };
+    assert.ok(mine.id);
+    const list = await runOp(engine, 'list_vendors', {}) as { id: string }[];
+    assert.deepEqual(list.map(v => v.id), [mine.id]);
+  });
+  const rows = await engine.query<{ id: string }>(
+    `SELECT id FROM vendors WHERE lower(name) = lower('BobVendorCo')`);
+  assert.equal(rows.length, 2, 'bob and alice each own a distinct vendor row');
+});
+
+test('rename_project cannot touch another user\'s project', async () => {
+  const res = await asRole('alice_r', async () =>
+    await runOp(engine, 'rename_project', { project_id: bobProject, name: 'hijacked' }) as { error?: string });
+  assert.match(res.error ?? '', /not found/);
+  const [row] = await engine.query<{ name: string }>(`SELECT name FROM projects WHERE id = $1`, [bobProject]);
+  assert.equal(row.name, 'bob-proj');
+});
+
+test('one-off items (no project) stay scoped to their owner', async () => {
+  const oneOff = await asRole('bob_r', async () =>
+    await runOp(engine, 'upsert_line_item', {
+      description: 'bob one-off standoffs', status: 'delivered',
+    }) as { id: string; project_id: string | null });
+  assert.equal(oneOff.project_id, null);
+  await asRole('alice_r', async () => {
+    const dash = await runOp(engine, 'get_dashboard_data', {}) as { one_offs: { id: string }[] };
+    assert.ok(dash.one_offs.every(i => i.id !== oneOff.id), 'alice must not see bob\'s one-off');
+    const touch = await runOp(engine, 'set_item_active', {
+      line_item_id: oneOff.id, active: false,
+    }) as { error?: string };
+    assert.match(touch.error ?? '', /not found/);
+  });
 });
 
 test('export_json and stale_orders stay scoped', async () => {
@@ -122,8 +166,8 @@ test('export_json and stale_orders stay scoped', async () => {
 
 test('scoped roles have no DELETE privilege at all', async () => {
   const res = await asRole('bob_r', async () =>
-    await runOp(engine, 'update_status', { line_item_id: bobItem, status: 'shipped' }) as { status: string });
-  assert.equal(res.status, 'shipped'); // own writes still work...
+    await runOp(engine, 'update_status', { line_item_id: bobItem, status: 'delivered' }) as { status: string });
+  assert.equal(res.status, 'delivered'); // own writes still work...
   const del = await asRole('bob_r', async () => {
     try {
       await engine.query(`DELETE FROM line_items WHERE id = $1`, [bobItem]);

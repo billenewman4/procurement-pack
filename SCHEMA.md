@@ -6,6 +6,27 @@ like this; the DB tables mirror it. Change it here first, everywhere else second
 Lock resolutions are inline below (see "Locked decisions"). All changes vs. the
 draft are additive or as-drafted — no skill output format changes.
 
+**Amended 2026-08-04 (vendor-CRM redesign,
+docs/plans/2026-08-04-vendor-crm-onboarding-redesign.md):** vendors table
+added; line_items gains `vendor_id`, `user_id`, `active` and a nullable
+`project_id` (NULL = one-off master-list part); statuses collapse to
+`researching → rfq → po_placed → delivered` — `shipped`/`issue` are
+order_events now, not statuses.
+
+## vendors (the vendor CRM)
+| col | type | notes |
+|---|---|---|
+| id | uuid | |
+| user_id | uuid | nullable in local mode; scopes the CRM per user in hosted mode |
+| name | text | unique per user on lower(name) |
+| domains | text[] | email domains seen for this vendor; merged on upsert |
+| contact_email | text | nullable |
+| website | text | nullable |
+| notes | text | nullable |
+| source | enum | `email_sweep` \| `manual` \| `sourcing_agent` |
+| active | boolean | false hides a vendor without deleting it |
+| created_at / updated_at | timestamptz | |
+
 ## users (hosted mode only)
 | col | type | notes |
 |---|---|---|
@@ -37,14 +58,17 @@ The context store that makes search work (Clark's "saved prompts", persisted).
 | col | type | notes |
 |---|---|---|
 | id | uuid | |
-| project_id | uuid | |
+| project_id | uuid | nullable — NULL = one-off master-list part (e.g. swept purchase history) |
+| user_id | uuid | nullable — owner scope for one-offs; backfilled from the project |
+| vendor_id | uuid | nullable — link into the vendor CRM; canonical over the text column |
 | description | text | human name: "step-down converter 12V→5V 3A" |
 | part_number | text | nullable — bespoke items may not have one |
-| vendor | text | nullable until sourced |
+| vendor | text | nullable until sourced; back-compat display name |
 | product_url | text | nullable |
 | qty | int | |
 | unit_price | numeric(10,2) | nullable |
-| status | enum | `needed` → `researching` → `ordered` → `shipped` → `delivered` → `issue` |
+| active | boolean | false = replaced/hidden, kept for history |
+| status | enum | `researching` → `rfq` → `po_placed` → `delivered` (shipped/issue are order_events) |
 | source | enum | `manual` \| `search` \| `email` |
 | ordered_at | timestamptz | nullable |
 | eta | date | nullable |
