@@ -96,6 +96,44 @@ part costs a build week. When bot walls block a store page, take price/lead
 time from the search snippet and mark what you couldn't see as `?` — never
 guess or reconstruct a number.
 
+## Step 3.6 — Deep sourcing (when available)
+
+If a `source_quote` tool is available on this connection (deep-sourcing is
+enabled), prefer it over manual web search for real vendor-catalog pricing:
+an agent queries live vendor catalogs and comes back with priced, in-stock
+options and provenance — better ground truth than a scraped listing. It can
+run alongside Steps 3/3.5, not instead of them — kick it off, then keep
+working while it runs.
+
+- **Kick it off.** Call `source_quote(part_description, quantity, tier,
+  notes, vendors)`. Fill `vendors` with the vendor CRM's `sourcing_slug`
+  values for vendors relevant to this part (approved/known vendors); leave
+  it empty to search all known vendors. Tell the user it's running, then
+  keep working — do NOT block on it.
+- **Poll `get_quote(quote_id)`** about once a minute while doing other work
+  (asking Step 2 questions, running a manual search in parallel); expect
+  5-10 minutes.
+- **On `complete`:** use `lines[]` for the priced options. Surface any
+  `critical_dims` marked `"assumed"` (not `"confirmed"`) to the user before
+  recommending — an assumed dimension is a spec gap, not a settled fact.
+  Surface `open_questions[]` too. Record candidate prices with
+  `add_line_item_option` (`source: 'sourcing_quote'`, `quote_id`) — top 2-3,
+  same as any other search result.
+- **On `rfq_drafted`:** NOT a failure — the agent found vendors but they
+  need an RFQ, not a catalog buy. For each `rfq_drafts[]` entry, create a
+  Gmail draft (never send) with the subject/body VERBATIM. `to` may be
+  empty — fill it from the vendor CRM's `contact_email` when known, else
+  leave blank for the user to fill in; when `to_source` is
+  `"scraped_unconfirmed"`, tell the user the address came from the vendor
+  site and to verify it before sending. Surface `questions[]`,
+  `spec_gaps[]`, and `open_questions[]` so the user can answer them in the
+  draft or in chat.
+- **On `no_results`:** don't treat it as "part doesn't exist" — check
+  `potential_product_links[]` first (a blocked or bot-walled vendor page is
+  not the same as a nonexistent part), and report `vendor_outcomes[]` so
+  the user sees everywhere the agent looked and why each attempt didn't
+  pan out.
+
 ## Step 4 — Output contract
 
 Every recommendation MUST contain, per option (2–4 options):
