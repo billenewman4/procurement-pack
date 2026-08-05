@@ -270,14 +270,21 @@ lecture about artifact types, snapshots vs live, or rendering mechanics —
 if they ask about working buttons, the one answer is: "Open claude.ai/code
 once and say: publish my live BOM dashboard" (it is not desktop-only).
 
-**In Cowork: create a LIVE artifact, not a chat artifact or a file.** Live
-artifacts persist on their own, re-query connectors with the viewer's own
-access, and are the whole point of the bridge code above — a one-off
-document defeats it. Create it once per user; every later "show me my BOM"
-means UPDATE the existing live artifact (`update_artifact`), never mint a
-sibling. Only where live artifacts don't exist (chat-only surfaces), fall
-back: SendUserFile / `create_artifact` snapshot, or save the HTML file and
-say where it is.
+**Delivery ladder — one rung per surface, top rung that applies:**
+
+1. **Artifact-publishing tool with capability manifests in your tool list**
+   (Claude Code, incl. claude.ai/code): publish the live version per
+   `dashboard/README.md`.
+2. **Cowork (`create_artifact`/`update_artifact` tools exist): a LIVE
+   artifact**, created once, updated in place forever — never a sibling.
+3. **Plain chat (claude.ai web or desktop chat): a NATIVE chat artifact.**
+   No tool is needed or involved — outputting the HTML as a standard
+   artifact block IS the mechanism, and it renders in the side panel.
+   NEVER deliver a downloadable file here, and NEVER claim artifacts
+   require the desktop app or any missing tool — that is false.
+4. **True file-only contexts** (a bare CLI with no artifact rendering):
+   save the HTML file and say where it is. This rung is for terminals
+   only — never for a chat surface.
 
 A Cowork live artifact declares its connector access in the
 `cowork-artifact-meta` JSON block at the top of the file. **Empty
