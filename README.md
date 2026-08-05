@@ -13,9 +13,10 @@ live vendor catalogs.
 2. On **claude.ai (the website)**: **Settings → Connectors → Add custom
    connector** → name it **Lora** → paste the link → Add.
    *(Team/Enterprise plans: an org Owner must do this step.)*
-3. Open a **new chat** on claude.ai (a regular chat, not a Cowork
-   session — regular chats can show your dashboard as a proper artifact)
-   and say: **set up Lora**
+3. Open a **new chat** and say: **set up Lora**
+   *(On the claude.ai website, use a regular chat rather than a Cowork
+   session for this — web Cowork can't display your dashboard as an
+   artifact yet. On the desktop app, either works.)*
 4. When Claude asks permission to use Lora, choose **Always allow**
    — one click now saves a click on every future request. (If a request
    ever gets auto-denied instead of asking, grant Lora in that

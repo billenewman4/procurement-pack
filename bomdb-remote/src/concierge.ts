@@ -159,7 +159,8 @@ or versions of the dashboard. One page, no siblings.
   CANNED TRUTHS for questions this flow will get — use these, never
   improvise alternatives:
   · "Why isn't it in my Artifacts page?" (only arises when the page
-    landed as a file card — Cowork sessions can't emit artifacts) →
+    landed as a file card — Cowork on the claude.ai website can't
+    emit artifacts yet; desktop and regular chats can) →
     "It lives in this chat. For a dashboard that lands in your
     Artifacts sidebar, ask in a regular chat — 'show my dashboard'
     there does it." NEVER mention the desktop app or pinning.
