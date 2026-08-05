@@ -4,9 +4,9 @@
 // not to be recited verbatim to the user.
 import type { Engine } from '../../bomdb/src/engine.ts';
 import { runOp } from '../../bomdb/src/operations.ts';
-import { sourcingUrl } from './sourcing.ts';
 
 const RAW = 'https://raw.githubusercontent.com/billenewman4/procurement-pack/main';
+const REPO = 'https://github.com/billenewman4/procurement-pack';
 
 export const GET_STARTED_TOOL = {
   name: 'get_started',
@@ -26,6 +26,8 @@ interface DashboardData {
     stale_items: { description: string; vendor: string | null }[];
     recent_events: { event: string; vendor: string; event_at: string; raw_summary: string | null }[];
   }[];
+  one_offs: { description: string; vendor: string | null; status: string }[];
+  vendors: { name: string; part_count: number; open_items: number; last_activity: string | null }[];
 }
 
 const SPEC_CATEGORIES = ['power', 'connectors', 'mechanical', 'constraints'];
@@ -35,95 +37,86 @@ prompts.
 
 1. Sweep Gmail for order lifecycle emails since the last sync (default 7
    days, widen if there's a gap), three passes: category:purchases first;
-   then targeted sweeps for vendor domains already in my BOM; then a broad
-   pass over the window — forwarded and oddly-routed vendor emails only
-   show up there. Read only sender/subject/snippet until an email is
-   classified as an order event; discard everything else.
-2. Record each event in the BOM connector with record_order_event, across
-   all my projects. Quote order numbers and prices exactly, never infer.
-   Leave line_item_id off anything below certain confidence — unmatched
-   events are kept for manual reconciliation.
+   then targeted sweeps for domains already in my vendor list
+   (list_vendors); then a broad pass over the window — forwarded and
+   oddly-routed vendor emails only show up there. Read only
+   sender/subject/snippet until an email is classified as an order event;
+   discard everything else.
+2. Record each event with record_order_event. Statuses are researching →
+   rfq → po_placed → delivered; shipped and issue are EVENTS, not
+   statuses — the item stays po_placed and the tool auto-advances forward
+   moves itself, never backward. Cover project items AND one-off
+   master-list items (one-offs take line_item_id with no project_id).
+   Quote order numbers and prices exactly, never infer. Leave
+   line_item_id off anything below certain confidence — unmatched events
+   need a project_id and are kept for manual reconciliation.
 3. Report three short sections: UPDATED (item, old → new status, ETA),
-   UNMATCHED (events needing my call), STALE (ordered 7+ days with no
+   UNMATCHED (events needing my call), STALE (po_placed 7+ days with no
    event — use the stale_orders tool; worth a vendor nudge).
 4. If nothing moved, say so in one line and stop.`;
 
-function newUserScript(hasSourcing: boolean): string {
-  const sourcingLine = hasSourcing
-    ? `\n   Also mention once: "ask me for real vendor quotes on any part —
-   a sourcing agent searches live catalogs and comes back in a few
-   minutes with priced, in-stock options you can add straight to your
-   BOM."`
-    : '';
+function newUserScript(): string {
   return `[bomdb concierge — NEW USER, empty workspace]
 
-This user just connected and has no projects. Guide them conversationally —
-never a wall of instructions, and don't use our internal words (MCP,
-connector, tool names) with them.
+This user just connected: no projects, no vendors, no parts. Guide them
+conversationally — never a wall of instructions, and don't use our
+internal words (MCP, connector, tool names) with them.
 
 CONSENT RULE for this whole flow: only write what the user told you IN
-THIS CONVERSATION. If you already know their project from memory or prior
-context, don't silently create it — say what you remember in one line and
-ask ("Sounds like you're building X — set your BOM up with that?").
-Confirmed memory counts as an answer; unconfirmed memory never gets
-written.
+THIS CONVERSATION. If you already know their vendors or projects from
+memory or prior context, don't silently write them — say what you
+remember in one line and ask ("Sounds like you buy from X — include
+them?"). Confirmed memory counts as an answer; unconfirmed memory never
+gets written.
 
-STEP 1 — WELCOME WITH THE MENU. One warm sentence, then the menu — and
-BE PITHY: one line per item, no elaboration, no paragraphs. Details come
-only when they pick something. Shape it like:
+STEP 0 — SKILLS, IMMEDIATELY, before any questions. Fetch ALL four
+files in one pass and present a save card for each:
+   vendor-sweep — ${RAW}/skills/vendor-sweep/SKILL.md
+   part-search — ${RAW}/skills/part-search/SKILL.md
+   gmail-orders — ${RAW}/skills/gmail-orders/SKILL.md
+   bom-dashboard — ${RAW}/skills/bom-dashboard/SKILL.md
+The full set lives at ${REPO} — that repo is the source of truth for
+what exists. Absence from your catalog is exactly why you package it,
+never a reason to skip; the only skip is a skill already active in this
+conversation. Tell them saved skills take effect in their NEXT chat,
+and never claim this step is done until they confirm clicking Save.
+One line on what they got, then straight to step 1.
 
-  1. BOM + specs — 4 questions, remembered everywhere (2 min)
-  2. Part search that fits YOUR build (1 click)${hasSourcing ? ' — incl. live vendor quotes' : ''}
-  3. Visual dashboard — "show me my BOM" (1 click)
-  4. Order tracking from Gmail (3 clicks)
-  5. Morning digest — #4 on autopilot (1 paste)
+STEP 1 — VENDOR LIST FROM EMAIL. Ask exactly one question: "Can I scan
+your last 6 months of email to build your vendor list? I'll show you
+everything before saving." On yes: follow the vendor-sweep skill you
+just fetched (its text is already in this conversation — use it even
+though the saved card activates next chat). Present findings as one
+compact table — vendors plus the parts bought from each — then STOP
+for their confirmation. Only after they confirm: upsert_vendor per
+vendor, then upsert_line_item per part (vendor name for auto-link, NO
+project_id — historical purchases are one-offs — status 'delivered',
+source 'email').
+No Gmail access, or the sweep finds nothing? Offer exactly two
+alternatives, one line each:
+  - Paste or upload a parts list (Excel, CSV, messy text is fine) —
+    you parse it, show the same table, confirm, write the same way.
+  - Start clean — create a project whenever you're ready.
 
-Then one short line: which ones? ("all" works — ~5 min total). #1 always
-happens first; #5 needs #4. Subset-pickers can add the rest later by
-asking. Keep EVERY subsequent step equally tight: short questions, no
-recaps of things they just said, no restating the menu.
-
-STEP 2 — PROJECT + SPEC INTERVIEW (always). Ask what they're building
-(one line is plenty), create it with create_project, then ~4 quick
-questions: power (voltage/battery/wall), connectors (what it plugs into),
-mechanical (size/mounting/materials), constraints (budget, shipping
-urgency, country-of-origin). Store each with upsert_spec (categories:
-${SPEC_CATEGORIES.join(', ')}). If they defer, pick sensible beginner
-defaults, store them, and say what you chose. Read the specs back in one
-compact line.
-
-STEP 3 — SKILL CARDS, one per chosen feature. Each feature's card:
-   #2 part-search — ${RAW}/skills/part-search/SKILL.md
-   #3 bom-dashboard — ${RAW}/skills/bom-dashboard/SKILL.md
-   #4 gmail-orders — ${RAW}/skills/gmail-orders/SKILL.md
-For each chosen feature whose skill is not already active in this
-conversation: fetch the file and package it as a skill with a save card —
-absence from their account is exactly the reason to package it, never a
-reason to skip. Already active → skip silently. Tell them saved skills
-take effect in their NEXT chat, and never claim this step is done until
-they confirm clicking Save.
-
-STEP 4 — GMAIL (for #4, never block on it). If Gmail tools are available
-here, confirm tracking is on with the cheapest possible read. If not:
-"Connect Gmail in your Claude settings and I can track orders
-automatically — everything else works without it."
-
-STEP 5 — DIGEST (for #5, only after Gmail works). Create a scheduled task
-(weekdays, 8am their time) whose prompt is EXACTLY the text between the
---- markers. If you cannot create scheduled tasks from this conversation,
-give them that text verbatim and say: "Open Tasks → new task → paste
-this → set it to weekday mornings." The task prompt must BE the digest
-instructions — never a request to set up a digest (a task run can't
-schedule other tasks).
+STEP 2 — TWO OFFERS, one line each, then stop:
+  - Dashboard: say "show me my BOM" any time.
+  - Weekday morning digest — order tracking on autopilot. On yes,
+    create a scheduled task (weekdays, 8am their time) whose prompt is
+    EXACTLY the text between the --- markers. If you cannot create
+    scheduled tasks from this conversation, give them that text
+    verbatim and say: "Open Tasks → new task → paste this → set it to
+    weekday mornings." The task prompt must BE the digest
+    instructions — never a request to set up a digest (a task run
+    can't schedule other tasks).
    ---
    ${DIGEST_TASK_PROMPT}
    ---
 
-STEP 6 — TEACH BY EXAMPLE, then stop. They can just talk: "find me a
-pressure sensor that fits my build", "I ordered the pump from McMaster",
-"catch me up on my orders", "show me my BOM". You remember between chats
-so they never re-explain; their data is private to them. Close with one
-concrete first search built from the specs they just gave you.${sourcingLine}`;
+DO NOT during onboarding: run part searches, quiz them about their
+design or specs, or push them to create a project. They came
+because supplier email is chaos; projects come when they're ready.
+Afterward they can just talk: "I ordered the pump from McMaster",
+"catch me up on my orders", "show me my BOM".`;
 }
 
 function fmtCounts(counts: Record<string, number>): string {
@@ -147,6 +140,13 @@ function briefing(data: DashboardData): string {
       lines.push(`  recent: ${e.event} from ${e.vendor} at ${e.event_at}${e.raw_summary ? ` — ${e.raw_summary}` : ''}`);
     }
   }
+  if (data.vendors.length) {
+    lines.push(`VENDORS (${data.vendors.length}): ${data.vendors.map(v => `${v.name} (${v.part_count} part${v.part_count === 1 ? '' : 's'}${v.open_items ? `, ${v.open_items} open` : ''})`).join('; ')}`);
+  }
+  if (data.one_offs.length) {
+    const open = data.one_offs.filter(o => o.status !== 'delivered').length;
+    lines.push(`ONE-OFFS: ${data.one_offs.length} part(s) outside any project${open ? ` (${open} not yet delivered)` : ''}`);
+  }
   lines.push('');
   if (nudges.length) {
     lines.push('NUDGES (mention at most two, only when relevant to what the user asked):');
@@ -157,10 +157,13 @@ function briefing(data: DashboardData): string {
 
 export async function getStartedText(engine: Engine): Promise<string> {
   const data = await runOp(engine, 'get_dashboard_data', {}) as DashboardData;
-  if (!data.projects || data.projects.length === 0) return newUserScript(Boolean(sourcingUrl()));
+  // A swept-but-projectless user (vendors/one-offs only) is set up, not new.
+  const isNew = !data.projects?.length && !data.vendors?.length && !data.one_offs?.length;
+  if (isNew) return newUserScript();
   return briefing(data);
 }
 
-/** Hint appended to an empty list_projects result. */
+/** Hint appended to an empty list_projects result. No projects may still
+ *  mean a swept vendor list exists — get_started sorts new from returning. */
 export const EMPTY_WORKSPACE_HINT =
-  '[bomdb hint: empty workspace — this is a new user. Call get_started for the onboarding flow before doing anything else.]';
+  '[bomdb hint: no projects yet — call get_started before doing anything else; it returns onboarding for a new user or their vendor/one-off context.]';
