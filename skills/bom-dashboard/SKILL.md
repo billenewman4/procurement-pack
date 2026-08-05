@@ -292,6 +292,23 @@ never two:
 `mcp: {servers: [{server: 'BOM Manager', tools: ['get_dashboard_data',
 'update_status', 'record_order_event', 'select_option', 'set_item_active']}]}`.
 
+**Before delivering, verify your own output — all six, every render:**
+
+1. `cowork-artifact-meta` (when on Cowork): `mcpServerNames` and `mcpTools`
+   arrays POPULATED per the template above — empty arrays are a build error.
+2. Exactly two tabs — Active BOM and Vendors. No pipeline bars, no
+   activity feed, no stale-orders tile: those are retired designs, and if
+   you produced one you built from memory instead of this file.
+3. Action-button elements present in the HTML with the bridge adapter and
+   graceful hiding — even if the current surface leaves them dormant.
+4. Statuses are researching/rfq/po_placed/delivered only; shipped and
+   issue appear as badges. `needed` or `shipped` as a status group means
+   stale knowledge — rebuild from this file.
+5. No orange anywhere; red only on issue signals.
+6. Report honestly which bridge the artifact runtime actually exposes and
+   whether buttons are live or dormant there — never describe dormant
+   buttons as working.
+
 Tell the user two things, once:
 
 - First open shows a one-time "this artifact uses BOM Manager" consent;
