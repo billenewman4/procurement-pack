@@ -10,14 +10,19 @@ live vendor catalogs.
 1. Get your personal connector link from whoever runs your team's database
    (it looks like `https://…run.app/mcp/<your-token>` — treat it like a
    password).
-2. On claude.ai: **Settings → Connectors → Add custom connector** → paste
-   the link → Add. *(Team/Enterprise plans: an org Owner must do this step.)*
-3. Open a new chat and say: **set up my BOM**
+2. On **claude.ai (the website)**: **Settings → Connectors → Add custom
+   connector** → name it **BOM Manager** → paste the link → Add.
+   *(Team/Enterprise plans: an org Owner must do this step.)*
+3. Open a new chat on claude.ai and say: **set up my BOM**
+4. When Claude asks permission to use BOM Manager, choose **Always allow**
+   — one click now saves a click on every future request. (If a request
+   ever gets auto-denied instead of asking, grant BOM Manager in that
+   chat's tools menu and try again.)
 
-That's the whole install. Claude walks you through the rest in the chat —
-your project, its specs, optional skill upgrades, Gmail order tracking, and
-a weekday-morning digest. The connector works on claude.ai web, the Desktop
-app, mobile, Cowork, and scheduled tasks.
+That's the whole install. Claude welcomes you and does the rest — builds
+your vendor list from your email, shows your dashboard, offers a
+weekday-morning digest. The website + Cowork is the recommended path; the
+same connector also works on the Desktop app, mobile, and scheduled tasks.
 
 ## Using Claude Code?
 
