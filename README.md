@@ -19,6 +19,19 @@ your project, its specs, optional skill upgrades, Gmail order tracking, and
 a weekday-morning digest. The connector works on claude.ai web, the Desktop
 app, mobile, Cowork, and scheduled tasks.
 
+## Using Claude Code?
+
+Send Claude Code this one message, with your personal link on the end:
+
+```
+Fetch https://raw.githubusercontent.com/billenewman4/procurement-pack/main/INSTALL_FOR_AGENTS.md and follow it exactly. My connector URL is: https://bomdb-remote-869731474645.us-central1.run.app/mcp/<your-token>
+```
+
+One asymmetry to know: connectors added on claude.ai sync into Claude Code
+automatically, but servers added via Claude Code's CLI do **not** appear on
+claude.ai or Cowork — so if you live in chat, use the connector card above
+(it covers Claude Code too).
+
 ## What you get
 
 - **A BOM that remembers.** Projects, specs, line items, and order history

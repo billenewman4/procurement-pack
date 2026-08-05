@@ -1,31 +1,67 @@
-# INSTALL_FOR_AGENTS.md
+# INSTALL_FOR_AGENTS.md — procurement pack via Claude Code
 
-You are a Claude agent asked to set up the procurement pack for your user.
-As of 2026-08-03 setup is a hosted connector — there is nothing for you to
-install on this machine, and most of what this file used to do now happens
-automatically in the user's first chat.
+You are an AI agent setting up the procurement pack for your user inside
+Claude Code. Read this entire file before acting, then follow the steps in
+order. Target: under 2 minutes. There is nothing to clone or install — the
+server is hosted; you only register it and let it drive.
 
-Do exactly this:
+**If you are a human reading this:** you probably want the README's
+connector card instead — 60 seconds, no terminal, and it covers claude.ai,
+Desktop, mobile, and Cowork. This file is only the Claude Code path.
 
-1. Ask whether they already have their **personal connector link** (a URL
-   like `https://…run.app/mcp/<token>`, sent privately by whoever operates
-   their team's BOM database). If they don't have one, that operator must
-   provision it first — see `TEAM_SETUP.md`; you cannot mint one.
+## Step 1: Get the user's personal connector URL
 
-2. Tell them, in plain words: "Open claude.ai → Settings → Connectors →
-   Add custom connector → paste your link → Add. Treat the link like a
-   password. If your workspace is on a Team plan, an org Owner has to add
-   it." You cannot click this for them — connector setup is theirs.
+Each user has a personal URL of the form:
 
-3. Then: "Start a new chat and say **set up my BOM**." The connector's
-   built-in concierge takes over from there: project creation, the spec
-   interview, skill save-cards, Gmail, the morning digest. Do not attempt
-   to replicate those steps yourself; the concierge's version is
-   state-aware and current.
+```
+https://bomdb-remote-869731474645.us-central1.run.app/mcp/<TOKEN>
+```
 
-That's the entire install. Only two situations call for anything more:
+If the user's message already included their full URL, use it. Otherwise
+ask them for it. If they don't have one, whoever operates their team's BOM
+database must provision it (see `TEAM_SETUP.md`); you cannot mint one —
+stop and tell them so plainly.
 
-- **Developer/offline machine install** of the local stdio server: follow
-  the appendix in `TEAM_SETUP.md`.
-- **They can't reach the operator:** stop and tell them plainly there is
-  no self-serve signup yet.
+**The URL is a bearer secret — anyone holding it is this user.** Never
+commit it, never write it into any file (scripts, notes, docs, memory),
+never echo it anywhere beyond the one command below.
+
+## Step 2: Register the server
+
+```bash
+claude mcp add --transport http bomdb https://bomdb-remote-869731474645.us-central1.run.app/mcp/<TOKEN>
+```
+
+Substitute the user's real URL. Default scope is this project only; add
+`--scope user` if they want it in every project.
+
+## Step 3: Verify the connection
+
+Call the `ping` tool on the `bomdb` server and confirm it returns `pong`.
+
+- Tools not visible → check `/mcp` shows `bomdb` connected; restart the
+  session if it was just added.
+- Connection or auth error → the URL is wrong or the token was revoked.
+  Re-confirm the URL with the user; a dead token means their operator must
+  rotate it — you can't fix that from here.
+
+## Step 4: Onboard
+
+Call the `get_started` tool and follow what it returns. It is state-aware
+(new user vs. returning) and is the single source of truth for onboarding.
+Do not improvise setup steps or replicate old ones from memory — this file
+deliberately doesn't contain them.
+
+## Step 5: Verification checklist
+
+Confirm all of these before declaring success:
+
+- [ ] `/mcp` shows `bomdb` connected
+- [ ] `ping` returned `pong`
+- [ ] `get_started` returned instructions and you followed them through
+- [ ] The token exists nowhere except the MCP registration — no files, no
+      commits, no pasted output
+
+One thing to tell the user: servers added via Claude Code's CLI do **not**
+appear on claude.ai or Cowork. If they also chat there, they should add
+the same URL as a connector per the README card.
