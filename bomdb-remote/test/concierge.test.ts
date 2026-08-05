@@ -47,7 +47,8 @@ test('new user gets the linear onboarding flow', async () => {
   // step 2: live dashboard on publish-capable surfaces, snapshot elsewhere
   assert.match(text, /dashboard\/vendor-crm-live\.html/);
   assert.match(text, /claude\.ai\/code/);
-  assert.doesNotMatch(text, /raw\.githubusercontent/);
+  // skills must never travel by URL; the dashboard HTML via shell curl is fine
+  assert.doesNotMatch(text, /raw\.githubusercontent\S*skills/);
   assert.match(text, /github\.com\/billenewman4\/procurement-pack/);
   assert.ok(
     text.indexOf('Save these while I go through your email') < text.indexOf('run the sweep'),
