@@ -47,6 +47,10 @@ path the concierge now uses) is retired; the appendix keeps the essentials.
    > and Cowork. If you're on a Team plan, an org Owner has to add the
    > connector for you.
 
+   If they live in Claude Code instead, point them at the "Using Claude
+   Code?" block in the README — same URL, pasted to the agent, which then
+   follows `INSTALL_FOR_AGENTS.md`.
+
 The in-chat concierge handles everything the old setup doc used to:
 project creation, the one-time spec interview, the three skill save-cards
 (part-search, gmail-orders, bom-dashboard), the Gmail nudge, and the
