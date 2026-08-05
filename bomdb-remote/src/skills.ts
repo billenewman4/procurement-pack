@@ -31,7 +31,10 @@ export async function getSkillText(name: string): Promise<string> {
   }
   const hit = cache.get(name);
   if (hit && Date.now() - hit.at < TTL_MS) return hit.text;
-  const text = await fetchSkill(name);
+  let text = await fetchSkill(name);
+  // Provenance stamp: lets any agent (or human) prove what it got and when,
+  // without maintaining version fields in the skill files themselves.
+  text += `\n\n<!-- served by bomdb get_skill at ${new Date().toISOString()} · ${text.length} chars · always current -->\n`;
   cache.set(name, { text, at: Date.now() });
   return text;
 }
