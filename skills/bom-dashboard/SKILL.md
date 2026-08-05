@@ -143,7 +143,7 @@ table here — the Vendors tab is the who, Active BOM is the what.
 
 ### Live bridge + action buttons
 
-The single connector name is **`BOM Manager`** — hardcode it; never declare
+The single connector name is **`Lora`** — hardcode it; never declare
 or address two names. There are TWO bridge runtimes; wrap them in one
 adapter and feature-detect with member checks only, never a probing call:
 
@@ -174,18 +174,18 @@ buttons hidden, copy buttons working. Never a broken button.
 Boot:
 
 ```js
-const SERVER = 'BOM Manager', DASH = 'get_dashboard_data';
+const SERVER = 'Lora', DASH = 'get_dashboard_data';
 render(SNAPSHOT);                                   // instant, bridge or not
 const MCP = () => window.claude?.mcp;
 if (MCP()) {
   document.documentElement.classList.add('live');   // CSS reveals .act buttons
   MCP().listTools().then(r => {
     const ok = (r.servers || []).some(s => s.server === SERVER && s.tools?.length);
-    if (!ok) return conn('Add "BOM Manager" in claude.ai Settings → Connectors');
+    if (!ok) return conn('Add "Lora" in claude.ai Settings → Connectors');
     MCP().watchTool(SERVER, DASH, INPUT, ev => {    // INPUT: {project_id} or {}
       if (ev.type === 'data') { patch(ev.result.payload); stamp(ev.result.cache?.storedAt); }
       else if (['needs_reauth','server_not_connected'].includes(ev.error.code))
-        conn('Reconnect "BOM Manager" in claude.ai Settings → Connectors');
+        conn('Reconnect "Lora" in claude.ai Settings → Connectors');
       // other errors: keep last-good page, note "live refresh failing" once
     }, { cache: { staleTime: 30_000 }, refetchInterval: 60_000 });
   }).catch(() => {});                               // listTools failed → snapshot mode
@@ -216,7 +216,7 @@ async function act(btn, tool, input) {              // every write-back funnels 
       : ['server_unavailable','upstream_error'].includes(e.code)
         ? 'Couldn’t confirm the update reached the server — check after the next refresh before retrying.'
       : ['needs_reauth','server_not_connected'].includes(e.code)
-        ? 'Reconnect "BOM Manager" in claude.ai Settings → Connectors'
+        ? 'Reconnect "Lora" in claude.ai Settings → Connectors'
       : (e.message || e.code));                     // note(): one muted line under the row, auto-clears
   }
 }
@@ -283,8 +283,8 @@ access, no live refresh, no buttons.** Fill them, exactly:
 ```html
 <script type="application/json" id="cowork-artifact-meta">
 { "name": "BOM Dashboard", "schemaVersion": 1,
-  "description": "Live vendor CRM + BOM, reads and writes via BOM Manager",
-  "mcpServerNames": ["BOM Manager"],
+  "description": "Live vendor CRM + BOM, reads and writes via Lora",
+  "mcpServerNames": ["Lora"],
   "mcpTools": ["get_dashboard_data", "update_status", "record_order_event",
                "select_option", "set_item_active"] }
 </script>
@@ -293,7 +293,7 @@ access, no live refresh, no buttons.** Fill them, exactly:
 If the publish surface instead takes a capability manifest parameter,
 declare the same minimal single-server grant — exactly one connector,
 never two:
-`mcp: {servers: [{server: 'BOM Manager', tools: ['get_dashboard_data',
+`mcp: {servers: [{server: 'Lora', tools: ['get_dashboard_data',
 'update_status', 'record_order_event', 'select_option', 'set_item_active']}]}`.
 
 **Before delivering, verify your own output — all six, every render:**
@@ -315,9 +315,9 @@ never two:
 
 Tell the user two things, once:
 
-- First open shows a one-time "this artifact uses BOM Manager" consent;
+- First open shows a one-time "this artifact uses Lora" consent;
   declining blanks the page until reload — expected, not broken. Their
-  connector must be named exactly `BOM Manager` for live mode; any other
+  connector must be named exactly `Lora` for live mode; any other
   name falls back to the snapshot.
 - The artifact can't be shared by public link — every viewer needs the
   connector.

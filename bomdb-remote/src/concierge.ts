@@ -147,7 +147,7 @@ writes. This is the payoff moment — show, don't offer:
     actually in your tool list (Claude Code, incl. claude.ai/code):
     download dashboard/vendor-crm-live.html from the repo
     (raw.githubusercontent via shell/curl — never a web-fetch tool)
-    and publish it per dashboard/README.md with the BOM Manager
+    and publish it per dashboard/README.md with the Lora
     manifest; give them the URL to bookmark. Buttons write real
     statuses.
   - Otherwise render the view-only dashboard now (bom-dashboard

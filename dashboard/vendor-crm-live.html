@@ -172,7 +172,7 @@ function showApp(){$('stateBox').classList.add('hidden');$('app').classList.remo
 
 var FIX={
   needs_reauth:function(s){return ['Reconnect your BOM','Your connector needs to be reconnected.','Reconnect "'+s+'" in claude.ai Settings → Connectors, then reload.']},
-  server_not_connected:function(s){return ['Add your BOM connector','This dashboard reads your BOM through a claude.ai connector.','Add "'+(s||'BOM Manager')+'" in claude.ai Settings → Connectors, then reload.']},
+  server_not_connected:function(s){return ['Add your BOM connector','This dashboard reads your BOM through a claude.ai connector.','Add "'+(s||'Lora')+'" in claude.ai Settings → Connectors, then reload.']},
   blocked_by_policy:function(){return ['Blocked by policy','Your organization blocks this tool for your account.','']},
   approval_required:function(){return ['Approval needed','This tool needs per-call approval, which artifacts can’t provide yet.','']}
 };
@@ -375,10 +375,10 @@ function boot(){
   }
   window.claude.mcp.listTools().then(function(r){
     var pick=(r.servers||[]).filter(function(s){
-      return s.server==='BOM Manager'&&s.tools&&s.tools.some(function(t){return t.name===DASH});
+      return s.server==='Lora'&&s.tools&&s.tools.some(function(t){return t.name===DASH});
     })[0];
     if(!pick){
-      var f=FIX.server_not_connected('BOM Manager');
+      var f=FIX.server_not_connected('Lora');
       showState(f[0],f[1],f[2]);setConn('err','no connector');
       return;
     }
