@@ -66,7 +66,7 @@ test('new user gets the linear onboarding flow', async () => {
   assert.match(text, /no approval pause/);
   assert.match(text, /STRAIGHT TO THE DASHBOARD/);
   assert.match(text, /Spot anything wrong\?/);
-  assert.match(text, /NEVER announce that a tool is missing/);
+  assert.match(text, /Never\s+announce that any tool is missing/);
   assert.doesNotMatch(text, /any\s+edits first\?/);
   // fallback: exactly the two alternatives
   assert.match(text, /Paste or upload a parts list/i);
