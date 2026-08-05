@@ -13,7 +13,7 @@ live vendor catalogs.
 2. On **claude.ai (the website)**: **Settings → Connectors → Add custom
    connector** → name it **Lora** → paste the link → Add.
    *(Team/Enterprise plans: an org Owner must do this step.)*
-3. Open a new chat on claude.ai and say: **set up my BOM**
+3. Open a new chat on claude.ai and say: **set up Lora**
 4. When Claude asks permission to use Lora, choose **Always allow**
    — one click now saves a click on every future request. (If a request
    ever gets auto-denied instead of asking, grant Lora in that

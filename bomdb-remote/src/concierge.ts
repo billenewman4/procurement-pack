@@ -11,7 +11,7 @@ const REPO = 'https://github.com/billenewman4/procurement-pack';
 export const GET_STARTED_TOOL = {
   name: 'get_started',
   description:
-    'Load the user\'s procurement context. Call this FIRST when the user says "set up my BOM" (or similar), asks anything about parts, BOMs, orders, vendors, or projects, or before any other bomdb tool in a conversation. Returns onboarding guidance for new users or a current-state briefing for returning users.',
+    'Load the user\'s procurement context. Call this FIRST when the user says "set up Lora" or "set up my BOM" (or similar), asks anything about parts, BOMs, orders, vendors, or projects, or before any other bomdb tool in a conversation. Returns onboarding guidance for new users or a current-state briefing for returning users.',
   inputSchema: { type: 'object' as const, properties: {}, required: [] as string[] },
 };
 
@@ -186,7 +186,7 @@ function fmtCounts(counts: Record<string, number>): string {
 }
 
 function briefing(data: DashboardData): string {
-  const lines: string[] = ['[bomdb concierge — returning user briefing. Use as context; don\'t recite it. If they asked to "set up my BOM", they\'re already set up — offer a catch-up or a new project instead.]', ''];
+  const lines: string[] = ['[bomdb concierge — returning user briefing. Use as context; don\'t recite it. If they asked to "set up Lora" (or "set up my BOM"), they\'re already set up — offer a catch-up or a new project instead.]', ''];
   const nudges: string[] = [];
   for (const p of data.projects) {
     lines.push(`PROJECT ${p.name} (id ${p.id}): ${fmtCounts(p.status_counts)}; $${p.total_committed.toFixed(2)} committed; specs: ${p.spec_categories.join(', ') || 'none'}`);

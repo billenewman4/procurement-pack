@@ -41,7 +41,7 @@ path the concierge now uses) is retired; the appendix keeps the essentials.
    > **Get set up (60 seconds):**
    > 1. On claude.ai: Settings → Connectors → Add custom connector → paste:
    >    `https://bomdb-remote-869731474645.us-central1.run.app/mcp/<their-token>`
-   > 2. New chat, say: **set up my BOM**
+   > 2. New chat, say: **set up Lora**
    >
    > Claude takes it from there. Works on web, the Desktop app, your phone,
    > and Cowork. If you're on a Team plan, an org Owner has to add the
