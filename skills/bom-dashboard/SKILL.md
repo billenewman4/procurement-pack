@@ -144,10 +144,28 @@ table here — the Vendors tab is the who, Active BOM is the what.
 ### Live bridge + action buttons
 
 The single connector name is **`BOM Manager`** — hardcode it; never declare
-or address two names. Feature-detect with the member check only
-(`window.claude?.mcp`), never a probing call. Without the bridge the page
-stays a readable snapshot: write-back buttons hidden, copy buttons working.
-Never a broken button.
+or address two names. There are TWO bridge runtimes; wrap them in one
+adapter and feature-detect with member checks only, never a probing call:
+
+- **Published artifacts** (claude.ai/Claude Code publishes) expose
+  `window.claude.mcp` — `callTool`/`watchTool`/`invalidate`, per-viewer
+  consent, exactly as coded below.
+- **Cowork live artifacts** expose Cowork's own connector bridge on its
+  runtime global (its `callMcpTool`-style API — discover the exact member
+  names from the runtime you're executing in, and poll on an interval for
+  freshness since there may be no `watchTool` equivalent).
+
+```js
+const bridge =
+  window.claude?.mcp ? { call: (t, i) => window.claude.mcp.callTool(SERVER, t, i),
+                         watch: true }
+  : window.cowork?.callMcpTool ? { call: (t, i) => window.cowork.callMcpTool(SERVER, t, i),
+                                   watch: false }   // poll ≥60s instead
+  : null;
+```
+
+Without either bridge the page stays a readable snapshot: write-back
+buttons hidden, copy buttons working. Never a broken button.
 
 Boot:
 
@@ -244,11 +262,15 @@ store the top 2–3 options with add_line_item_option.`
 One line of commentary max, only if something needs action. Don't narrate the
 layout or repeat numbers on screen.
 
-Deliver with SendUserFile, persist with `create_artifact`; later renders of
-the same project `update_artifact` in place. Where those tools don't exist,
-save the HTML file and tell the user where it is. If the publish surface
-takes a capability manifest, declare the minimal single-server grant —
-exactly one connector, never two:
+**In Cowork: create a LIVE artifact, not a chat artifact or a file.** Live
+artifacts persist on their own, re-query connectors with the viewer's own
+access, and are the whole point of the bridge code above — a one-off
+document defeats it. Create it once per user; every later "show me my BOM"
+means UPDATE the existing live artifact (`update_artifact`), never mint a
+sibling. Only where live artifacts don't exist (chat-only surfaces), fall
+back: SendUserFile / `create_artifact` snapshot, or save the HTML file and
+say where it is. If the publish surface takes a capability manifest,
+declare the minimal single-server grant — exactly one connector, never two:
 `mcp: {servers: [{server: 'BOM Manager', tools: ['get_dashboard_data',
 'update_status', 'record_order_event', 'select_option', 'set_item_active']}]}`.
 
