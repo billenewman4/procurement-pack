@@ -37,6 +37,16 @@ once sourcing is activated. `--allow-unauthenticated` is correct: auth is
 the secret URL path. Secret rotation = edit env.yaml → sync-secrets.sh →
 redeploy.
 
+**SOURCING_AGENT_URL** is the full upstream sourcing-agent MCP endpoint,
+including its partner token (`https://host/mcp/<token>`) — this server
+holds the only copy; users never see it. Once set, it enables five relayed
+tools: `connect_vendor` and `get_job` (vendor recon), `list_sourcing_vendors`
+(the sourcing service's own connector catalog — distinct from bomdb's own
+`list_vendors`, the user's vendor CRM), and `source_quote`/`get_quote`
+(catalog quoting). Leave it unset and a deployment degrades to plain bomdb
+instead of shipping tools that always fail — the deploy MUST set it for
+sourcing to appear at all.
+
 ## Onboard a teammate
 
 1. Provision their scoped DB role (prints direct + pooler strings):

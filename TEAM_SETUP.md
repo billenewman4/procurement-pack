@@ -74,8 +74,9 @@ onboarding tests): `DATABASE_URL=<master> node bomdb/scripts/reset-user.ts <role
 - The connector URL is a bearer secret (interim until OAuth): anyone
   holding the full URL is that user. It lives in their connector settings
   and our request logs. Rotation is cheap (above).
-- Deep-sourcing tools (`source_quote`/`get_quote`) appear only when the
-  deployment has `SOURCING_AGENT_URL` configured.
+- Deep-sourcing tools (`connect_vendor`, `get_job`, `list_sourcing_vendors`,
+  `source_quote`, `get_quote`) appear only when the deployment has
+  `SOURCING_AGENT_URL` configured.
 - Artifacts are snapshots — fresh each time they ask, not live.
 
 ## Appendix — local power-user install (optional, for development)
