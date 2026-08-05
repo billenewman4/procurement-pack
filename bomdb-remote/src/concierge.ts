@@ -158,10 +158,11 @@ or versions of the dashboard. One page, no siblings.
   dashboard' in any chat, any time, for a fresh one."
   CANNED TRUTHS for questions this flow will get — use these, never
   improvise alternatives:
-  · "Why isn't it in my Artifacts page?" → "It lives in this chat —
-    this surface doesn't add pages to your Artifacts gallery. A fresh
-    one is always two words away: 'show my dashboard'." NEVER mention
-    the desktop app, pinning, or any other app as a fix.
+  · "Why isn't it in my Artifacts page?" (only arises when the page
+    landed as a file card — Cowork sessions can't emit artifacts) →
+    "It lives in this chat. For a dashboard that lands in your
+    Artifacts sidebar, ask in a regular chat — 'show my dashboard'
+    there does it." NEVER mention the desktop app or pinning.
   · "Why don't the buttons work?" → "The chat is the button — just
     tell me: 'mark the sensor delivered' — and I'll do it."
   HARD STOP after that: never explain artifact types, snapshots vs
