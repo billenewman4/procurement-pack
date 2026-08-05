@@ -269,8 +269,26 @@ document defeats it. Create it once per user; every later "show me my BOM"
 means UPDATE the existing live artifact (`update_artifact`), never mint a
 sibling. Only where live artifacts don't exist (chat-only surfaces), fall
 back: SendUserFile / `create_artifact` snapshot, or save the HTML file and
-say where it is. If the publish surface takes a capability manifest,
-declare the minimal single-server grant — exactly one connector, never two:
+say where it is.
+
+A Cowork live artifact declares its connector access in the
+`cowork-artifact-meta` JSON block at the top of the file. **Empty
+`mcpTools`/`mcpServerNames` arrays make a dead page — no connector
+access, no live refresh, no buttons.** Fill them, exactly:
+
+```html
+<script type="application/json" id="cowork-artifact-meta">
+{ "name": "BOM Dashboard", "schemaVersion": 1,
+  "description": "Live vendor CRM + BOM, reads and writes via BOM Manager",
+  "mcpServerNames": ["BOM Manager"],
+  "mcpTools": ["get_dashboard_data", "update_status", "record_order_event",
+               "select_option", "set_item_active"] }
+</script>
+```
+
+If the publish surface instead takes a capability manifest parameter,
+declare the same minimal single-server grant — exactly one connector,
+never two:
 `mcp: {servers: [{server: 'BOM Manager', tools: ['get_dashboard_data',
 'update_status', 'record_order_event', 'select_option', 'set_item_active']}]}`.
 
