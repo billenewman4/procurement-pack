@@ -6,6 +6,7 @@ import type { Engine } from '../../bomdb/src/engine.ts';
 import { operations, runOp } from '../../bomdb/src/operations.ts';
 import { buildToolDefs } from '../../bomdb/src/tool-defs.ts';
 import { GET_STARTED_TOOL, getStartedText, EMPTY_WORKSPACE_HINT } from './concierge.ts';
+import { GET_SKILL_TOOL, getSkillText } from './skills.ts';
 import { SOURCING_TOOLS, isSourcingTool, callSourcing, sourcingUrl } from './sourcing.ts';
 
 const PING_TOOL = {
@@ -23,6 +24,7 @@ function buildServer(engine: Engine) {
     tools: [
       ...buildToolDefs(operations),
       GET_STARTED_TOOL,
+      GET_SKILL_TOOL,
       PING_TOOL,
       ...(sourcingUrl() ? SOURCING_TOOLS : []),
     ],
@@ -39,6 +41,17 @@ function buildServer(engine: Engine) {
     }
     if (name === 'get_started') {
       return { content: [{ type: 'text' as const, text: await getStartedText(engine) }] };
+    }
+    if (name === 'get_skill') {
+      try {
+        const text = await getSkillText(String((params as Record<string, unknown> | undefined)?.name ?? ''));
+        return { content: [{ type: 'text' as const, text }] };
+      } catch (err) {
+        return {
+          content: [{ type: 'text' as const, text: err instanceof Error ? err.message : String(err) }],
+          isError: true,
+        };
+      }
     }
     if (isSourcingTool(name)) {
       return callSourcing(name, (params ?? {}) as Record<string, unknown>);

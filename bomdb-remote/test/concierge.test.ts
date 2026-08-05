@@ -37,11 +37,11 @@ test('new user gets the linear onboarding flow', async () => {
   assert.match(text, /WELCOME, before anything else/);
   assert.match(text, /Ready\? Say continue\./);
   assert.match(text, /Do not fetch\s+skills, call tools/);
-  // step 1a: all four skill save-cards, before the sweep runs
-  assert.match(text, /skills\/vendor-sweep\/SKILL\.md/);
-  assert.match(text, /skills\/part-search\/SKILL\.md/);
-  assert.match(text, /skills\/gmail-orders\/SKILL\.md/);
-  assert.match(text, /skills\/bom-dashboard\/SKILL\.md/);
+  // step 1a: all four skills via get_skill, before the sweep runs
+  assert.match(text, /get_skill/);
+  assert.match(text, /vendor-sweep, part-search,\s+gmail-orders, bom-dashboard/);
+  assert.match(text, /NEVER fetch skill files from GitHub URLs/);
+  assert.doesNotMatch(text, /raw\.githubusercontent/);
   assert.match(text, /github\.com\/billenewman4\/procurement-pack/);
   assert.ok(
     text.indexOf('Save these while I go through your email') < text.indexOf('run the sweep'),
