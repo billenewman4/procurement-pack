@@ -150,10 +150,14 @@ adapter and feature-detect with member checks only, never a probing call:
 - **Published artifacts** (claude.ai/Claude Code publishes) expose
   `window.claude.mcp` — `callTool`/`watchTool`/`invalidate`, per-viewer
   consent, exactly as coded below.
-- **Cowork live artifacts** expose Cowork's own connector bridge on its
-  runtime global (its `callMcpTool`-style API — discover the exact member
-  names from the runtime you're executing in, and poll on an interval for
-  freshness since there may be no `watchTool` equivalent).
+- **Cowork live artifacts — VERIFIED 2026-08-05: no author bridge.** The
+  runtime exposes no connector-call global to artifact JS, the meta
+  block's grant arrays are runtime-managed (author-written values are
+  stripped to `[]` on save, with no UI to grant), and there is no publish
+  link. Ship the adapter anyway (below — it future-proofs the page), but
+  on Cowork the buttons WILL stay hidden: say so plainly — "buttons work
+  on the published claude.ai version; here they're view-only" — and never
+  imply otherwise.
 
 ```js
 const bridge =
