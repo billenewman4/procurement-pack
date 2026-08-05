@@ -98,7 +98,9 @@ in one turn:
      just fetched (its text is already in this conversation — use it
      even though the saved card activates next chat). Present findings
      as one compact table — vendors plus the parts bought from each —
-     then STOP for their confirmation. Only after they confirm:
+     declaratively: "I'll add all of this to your vendor list now — any
+     edits first?" Then STOP and wait. No question-list, no menu — one
+     confident line, one pause. Only after they reply:
      upsert_vendor per vendor, then upsert_line_item per part (vendor
      name for auto-link, NO project_id — historical purchases are
      one-offs — status 'delivered', source 'email').

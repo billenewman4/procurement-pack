@@ -52,16 +52,20 @@ list for the user to judge — never silently included, never silently
 dropped. Dedup vendors by email domain and case-insensitive name
 (mcmaster.com + "McMaster-Carr" + "mcmaster carr" = one vendor).
 
-## Step 3 — Propose, then STOP
+## Step 3 — Propose declaratively, then STOP
 
-Present compactly:
+Present compactly, as a plan — not a questionnaire:
 
 1. **Vendors table** — name, domain(s), purchases seen, last seen.
 2. **Parts table** — description, vendor, date, amount, evidence quote.
-3. **Not-sure list** — rows below the confidence gate, one line each.
+3. **Not-sure list** — rows below the confidence gate, one line each,
+   EXCLUDED by default: "I left these out — say the word to include any."
 
-Then stop and ask what to keep. NEVER auto-write — edits and removals
-happen here, before anything touches the database.
+Close with one declarative line: "I'll add all of this to your vendor
+list now — any edits first?" Then STOP and wait for their reply. Their
+go-ahead (or edits, or silence-breaking "go") is the confirmation.
+NEVER write before that reply — the pause is the consent, the phrasing
+is just confident.
 
 ## Step 4 — Write on confirmation only
 
