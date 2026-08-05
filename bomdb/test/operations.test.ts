@@ -145,6 +145,27 @@ test('record_order_event auto-advances matched item forward only', async () => {
   assert.equal(done.line_item_status, 'delivered');
 });
 
+test('record_order_event scope rules: unmatched needs project_id, project items need theirs', async () => {
+  const neither = await runOp(engine, 'record_order_event', {
+    vendor: 'X', event: 'confirmed', event_at: '2026-08-04T00:00:00Z', raw_summary: 'no scope',
+  }) as { error: string };
+  assert.match(neither.error, /project_id/);
+  // a project item is not a one-off — omitting its project_id must refuse,
+  // not store an orphan event
+  const p = await runOp(engine, 'create_project', { name: 'event-scope-test' }) as { id: string };
+  const li = await runOp(engine, 'upsert_line_item', {
+    project_id: p.id, description: 'proj part', status: 'po_placed',
+  }) as { id: string };
+  const wrong = await runOp(engine, 'record_order_event', {
+    line_item_id: li.id, vendor: 'X', event: 'shipped',
+    event_at: '2026-08-04T00:00:00Z', raw_summary: 'missing project scope',
+  }) as { error: string };
+  assert.match(wrong.error, /project_id/);
+  const [{ n }] = await engine.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM order_events WHERE project_id IS NULL`);
+  assert.equal(n, 0, 'no orphan events stored');
+});
+
 test('unmatched events are kept with null line_item_id', async () => {
   const p = await runOp(engine, 'create_project', { name: 'unmatched-test' }) as { id: string };
   const ev = await runOp(engine, 'record_order_event', {

@@ -320,10 +320,10 @@ export const operations: Operation[] = [
   },
   {
     name: 'record_order_event',
-    description: 'Append an order lifecycle event from an email (gmail-orders emits these). This is the ONLY home of shipped/issue — they are events, not statuses. Auto-advances the matched line item when the event implies a forward move (confirmed/shipped → po_placed, delivered → delivered); never moves backward — anomalies come back flagged for the user. Unmatched events (no line_item_id) are kept for manual reconciliation.',
+    description: 'Append an order lifecycle event from an email (gmail-orders emits these). This is the ONLY home of shipped/issue — they are events, not statuses. Auto-advances the matched line item when the event implies a forward move (confirmed/shipped → po_placed, delivered → delivered); never moves backward — anomalies come back flagged for the user. Unmatched events (no line_item_id) are kept for manual reconciliation and require project_id. For an event on a one-off master-list item, omit project_id and pass its line_item_id.',
     params: {
-      project_id: { type: 'string', required: true },
-      line_item_id: { type: 'string', description: 'Omit if unmatched' },
+      project_id: { type: 'string', description: 'Omit ONLY for an event on a one-off master-list item (line_item_id required then)' },
+      line_item_id: { type: 'string', description: 'Omit if unmatched (unmatched events need project_id)' },
       vendor: { type: 'string', required: true },
       order_number: { type: 'string' },
       event: { type: 'string', enum: ['confirmed', 'shipped', 'delivered', 'backordered', 'issue'], required: true },
@@ -333,32 +333,45 @@ export const operations: Operation[] = [
       raw_summary: { type: 'string', description: 'One line. Never full bodies.', required: true },
     },
     handler: async (engine, p) => {
+      if (!p.project_id && !p.line_item_id) {
+        return { error: 'record_order_event needs project_id, line_item_id, or both — unmatched events require project_id, one-off events require line_item_id' };
+      }
       let line_item_status: string | null = null;
       let flag: string | undefined;
-      // Match the line item within the given project only — a valid id from
-      // another project must never be advanced (or linked) from here.
+      // Match the line item within the given scope only (NULL project = the
+      // one-off master list) — a valid id from another project must never be
+      // advanced (or linked) from here.
       let matched: { status: string } | undefined;
       let lineItemId: unknown = p.line_item_id ?? null;
       if (p.line_item_id) {
         [matched] = await engine.query<{ status: string }>(
-          `SELECT status FROM line_items WHERE id = $1 AND project_id = $2`,
-          [p.line_item_id, p.project_id]);
+          `SELECT status FROM line_items WHERE id = $1 AND project_id IS NOT DISTINCT FROM $2`,
+          [p.line_item_id, p.project_id ?? null]);
         if (!matched) {
+          if (!p.project_id) {
+            // No project scope to keep an orphan event under — refuse instead.
+            return { error: `line item ${p.line_item_id} is not one of your one-off master-list items — pass its project_id for a project item` };
+          }
           lineItemId = null;
           flag = `line item ${p.line_item_id} not found in project ${p.project_id} — event stored unmatched for manual reconciliation`;
         }
       }
+      // user_id mirrors upsert_line_item: the project's owner, else the
+      // connected scoped user (one-off events scope through it under RLS).
       const [ev] = await engine.query(
-        `INSERT INTO order_events (line_item_id, project_id, vendor, order_number, event, event_at, tracking_url, email_ref, raw_summary)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-        [lineItemId, p.project_id, p.vendor, p.order_number ?? null,
+        `INSERT INTO order_events (line_item_id, project_id, user_id, vendor, order_number, event, event_at, tracking_url, email_ref, raw_summary)
+         VALUES ($1,$2,
+                 COALESCE((SELECT user_id FROM projects WHERE id = $2),
+                          (SELECT id FROM users WHERE pg_role = current_user)),
+                 $3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+        [lineItemId, p.project_id ?? null, p.vendor, p.order_number ?? null,
          p.event, p.event_at, p.tracking_url ?? null, p.email_ref ?? null, p.raw_summary]);
       if (matched) {
         const implied = eventToStatus(p.event as string);
         if (implied && isForwardMove(matched.status, implied)) {
           const [updated] = await engine.query<{ status: string }>(
-            `UPDATE line_items SET status = $2 WHERE id = $1 AND project_id = $3 RETURNING status`,
-            [p.line_item_id, implied, p.project_id]);
+            `UPDATE line_items SET status = $2 WHERE id = $1 AND project_id IS NOT DISTINCT FROM $3 RETURNING status`,
+            [p.line_item_id, implied, p.project_id ?? null]);
           line_item_status = updated.status;
         } else {
           line_item_status = matched.status;

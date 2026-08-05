@@ -82,7 +82,8 @@ The context store that makes search work (Clark's "saved prompts", persisted).
 |---|---|---|
 | id | uuid | |
 | line_item_id | uuid | nullable — unmatched events kept for manual reconcile |
-| project_id | uuid | |
+| project_id | uuid | nullable — NULL = event on a one-off master-list item (line_item_id required then) |
+| user_id | uuid | nullable — owner scope for one-off events; backfilled from the project |
 | vendor | text | |
 | order_number | text | |
 | event | enum | `confirmed` \| `shipped` \| `delivered` \| `backordered` \| `issue` |

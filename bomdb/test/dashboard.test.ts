@@ -21,7 +21,7 @@ interface DashboardProject {
 
 interface Dashboard {
   projects: DashboardProject[];
-  one_offs: { description: string; status: string }[];
+  one_offs: { id: string; description: string; status: string; shipped: boolean; open_issue: boolean }[];
   vendors: { name: string; part_count: number }[];
 }
 
@@ -110,6 +110,30 @@ test('an issue followed by a delivered event is resolved', async () => {
   });
   const res = await runOp(engine, 'get_dashboard_data', { project_id: projectId }) as Dashboard;
   assert.equal(res.projects[0].open_issues, 0);
+});
+
+test('one-off items receive events and derive shipped/open_issue', async () => {
+  const oneOff = await runOp(engine, 'upsert_line_item', {
+    description: 'reordered pump (one-off)', vendor: 'McMaster-Carr', status: 'po_placed',
+  }) as { id: string };
+  // no project_id: the event scopes through the one-off item itself
+  const shipped = await runOp(engine, 'record_order_event', {
+    line_item_id: oneOff.id, vendor: 'McMaster-Carr', event: 'shipped',
+    event_at: new Date().toISOString(), raw_summary: 'one-off reorder shipped',
+  }) as { error?: string; project_id: string | null; line_item_status: string };
+  assert.equal(shipped.error, undefined, `one-off shipped event failed: ${shipped.error}`);
+  assert.equal(shipped.project_id, null);
+  assert.equal(shipped.line_item_status, 'po_placed');
+  const issue = await runOp(engine, 'record_order_event', {
+    line_item_id: oneOff.id, vendor: 'McMaster-Carr', event: 'issue',
+    event_at: new Date().toISOString(), raw_summary: 'one-off reorder damaged',
+  }) as { error?: string };
+  assert.equal(issue.error, undefined, `one-off issue event failed: ${issue.error}`);
+  const res = await runOp(engine, 'get_dashboard_data', {}) as Dashboard;
+  const row = res.one_offs.find(i => i.id === oneOff.id);
+  assert.ok(row, 'one-off missing from dashboard');
+  assert.equal(row.shipped, true);
+  assert.equal(row.open_issue, true);
 });
 
 test('get_dashboard_data scoped to one project_id', async () => {

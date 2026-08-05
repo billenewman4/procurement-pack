@@ -155,6 +155,31 @@ test('one-off items (no project) stay scoped to their owner', async () => {
   });
 });
 
+test('one-off order events stay scoped to their owner', async () => {
+  const oneOff = await asRole('bob_r', async () => {
+    const li = await runOp(engine, 'upsert_line_item', {
+      description: 'bob one-off pump', status: 'po_placed',
+    }) as { id: string };
+    const ev = await runOp(engine, 'record_order_event', {
+      line_item_id: li.id, vendor: 'Amazon', event: 'shipped',
+      event_at: '2026-08-04T00:00:00Z', raw_summary: 'bob one-off shipped',
+    }) as { error?: string; project_id: string | null; user_id: string | null };
+    assert.equal(ev.error, undefined, `bob's one-off event failed: ${ev.error}`);
+    assert.equal(ev.project_id, null);
+    assert.ok(ev.user_id, 'one-off event carries the owner scope');
+    return li;
+  });
+  await asRole('alice_r', async () => {
+    const seen = await engine.query(`SELECT id FROM order_events WHERE project_id IS NULL`);
+    assert.equal(seen.length, 0, 'alice must not see bob\'s one-off events');
+    const res = await runOp(engine, 'record_order_event', {
+      line_item_id: oneOff.id, vendor: 'X', event: 'issue',
+      event_at: '2026-08-04T00:00:00Z', raw_summary: 'hijack',
+    }) as { error?: string };
+    assert.ok(res.error, 'alice must not record events on bob\'s one-off');
+  });
+});
+
 test('export_json and stale_orders stay scoped', async () => {
   await asRole('alice_r', async () => {
     const exp = await runOp(engine, 'export_json', { project_id: bobProject }) as { error?: string };

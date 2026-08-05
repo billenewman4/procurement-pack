@@ -91,7 +91,8 @@ CREATE TABLE IF NOT EXISTS line_item_options (
 CREATE TABLE IF NOT EXISTS order_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   line_item_id uuid REFERENCES line_items(id) ON DELETE SET NULL,
-  project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  project_id uuid REFERENCES projects(id) ON DELETE CASCADE,  -- NULL = event on a one-off master-list item
+  user_id uuid REFERENCES users(id),          -- owner scope for one-off events; NULL in local/owner mode
   vendor text NOT NULL,
   order_number text,
   event text NOT NULL
@@ -153,10 +154,14 @@ CREATE POLICY line_items_own ON line_items FOR ALL
   WITH CHECK (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user)
          OR (project_id IS NULL AND user_id IN (SELECT id FROM users WHERE pg_role = current_user)));
 
+-- Events on one-off items (no project) scope through their own user_id,
+-- mirroring line_items_own above.
 DROP POLICY IF EXISTS order_events_own ON order_events;
 CREATE POLICY order_events_own ON order_events FOR ALL
-  USING (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user))
-  WITH CHECK (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user));
+  USING (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user)
+         OR (project_id IS NULL AND user_id IN (SELECT id FROM users WHERE pg_role = current_user)))
+  WITH CHECK (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user)
+         OR (project_id IS NULL AND user_id IN (SELECT id FROM users WHERE pg_role = current_user)));
 
 DROP POLICY IF EXISTS line_item_options_own ON line_item_options;
 CREATE POLICY line_item_options_own ON line_item_options FOR ALL

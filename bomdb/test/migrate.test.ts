@@ -192,6 +192,19 @@ test('the new status CHECK is enforced after migration', async () => {
     /check|constraint/i);
 });
 
+test('order_events gain an owner scope and a nullable project_id', async () => {
+  const events = await engine.query<{ user_id: string | null; project_id: string | null }>(
+    `SELECT user_id, project_id FROM order_events
+     WHERE line_item_id = $1 OR line_item_id = $2`, [ids.shipped_has_ev, ids.shipped_no_ev]);
+  assert.equal(events.length, 2, 'pre-existing + compensating event');
+  assert.ok(events.every(e => e.user_id === ids.eshan),
+    'user_id backfilled from the owning project, incl. compensating events');
+  // one-off events (no project) are now storable
+  await engine.query(
+    `INSERT INTO order_events (line_item_id, project_id, user_id, vendor, event, event_at, raw_summary)
+     VALUES (NULL, NULL, $1, 'X', 'issue', now(), 'one-off event post-migration')`, [ids.eshan]);
+});
+
 test('rerunning the migration changes nothing', async () => {
   const snapshot = async () => ({
     vendors: (await engine.query<{ n: number }>(`SELECT count(*)::int AS n FROM vendors`))[0].n,

@@ -46,6 +46,10 @@ export async function migrate(engine: Engine): Promise<void> {
     await engine.query(`ALTER TABLE line_items ALTER COLUMN project_id DROP NOT NULL`);
     await engine.query(`ALTER TABLE line_items ALTER COLUMN status SET DEFAULT 'researching'`);
     await engine.query(`ALTER TABLE line_item_options ADD COLUMN IF NOT EXISTS vendor_id uuid REFERENCES vendors(id)`);
+    // Events on one-off items carry no project — nullable project_id plus a
+    // user_id owner scope, mirroring line_items.
+    await engine.query(`ALTER TABLE order_events ALTER COLUMN project_id DROP NOT NULL`);
+    await engine.query(`ALTER TABLE order_events ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES users(id)`);
     console.log('DDL adds applied');
 
     // line_items.user_id backfills from the owning project so RLS and rollups
@@ -89,6 +93,12 @@ export async function migrate(engine: Engine): Promise<void> {
     await engine.query(
       `ALTER TABLE line_items ADD CONSTRAINT line_items_status_check
        CHECK (status IN ('researching','rfq','po_placed','delivered'))`);
+    // order_events.user_id backfill runs AFTER the compensating inserts so
+    // they get an owner scope too.
+    await engine.query(
+      `UPDATE order_events oe SET user_id = p.user_id
+       FROM projects p
+       WHERE p.id = oe.project_id AND oe.user_id IS NULL AND p.user_id IS NOT NULL`);
     console.log(`statuses remapped: ${remapped.length} item(s), ${shipped.length} shipped event(s), ${issues.length} issue event(s) inserted`);
 
     // ---- 3. Vendors from legacy vendor text; vendor_id backfill ----
