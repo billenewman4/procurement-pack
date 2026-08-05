@@ -103,7 +103,9 @@ in one turn:
      confident line, one pause. Only after they reply:
      upsert_vendor per vendor, then upsert_line_item per part (vendor
      name for auto-link, NO project_id — historical purchases are
-     one-offs — status 'delivered', source 'email').
+     one-offs — source 'email'; status per the sweep skill's rules:
+     'delivered' only if it actually arrived, in-flight orders get
+     'po_placed' plus a shipped order event).
 No Gmail access, or the sweep finds nothing? Offer exactly two
 alternatives, one line each:
   - Paste or upload a parts list (Excel, CSV, messy text is fine) —

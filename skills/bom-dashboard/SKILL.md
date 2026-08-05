@@ -36,7 +36,14 @@ settled.
 | **Researching** | `researching` + `rfq` — not ordered yet; the working list. An `rfq` item shows a pending-quote placeholder tile. |
 | **Ordered** | `po_placed` — money spent, part not here. `shipped: true` (event-derived) is a badge on the row, never a tab. |
 | **Delivered** | `delivered` — on the bench. |
-| **Vendors** | The vendor CRM rollup + one-off purchase history. Not a lifecycle stage. |
+| **Vendors** | The vendor CRM rollup. Not a lifecycle stage. |
+
+**One-offs live in the lifecycle tabs too.** Every `one_offs` item lands in
+the tab its status says — delivered one-offs in Delivered (grouped under a
+muted "Purchase history" heading below any project group), an in-flight
+one-off in Ordered like any other row. Tab count pills include them. A user
+whose whole workspace came from the email sweep must see a full Delivered
+tab and live tiles — not three zeros and a header claiming "6 parts".
 
 `shipped` and `issue` are order events, not statuses. Each item carries
 `open_issue` (an issue event with no later shipped/delivered) — that's the
@@ -82,7 +89,9 @@ is no orange in this design.
    Committed `$X.YZ` · In hand `n/total` · Open issues `n`.
    Big number, small uppercase muted label. The issue tile gets a small red
    dot beside the number when `n > 0`; the number stays in ink. Tiles count
-   project items only — purchase history is history, not build state.
+   ALL items — projects and one-offs alike: Committed = po_placed +
+   delivered spend, In hand = delivered / all. Purchase history is real
+   money and real parts; a sweep-only workspace shows its true totals.
 
 3. **Tab strip** — four labels, each with a count pill; the three lifecycle
    labels get their color swatch. Researching is the default checked tab.
@@ -140,9 +149,9 @@ Table: Vendor · Parts bought · Open · Last activity. Vendor cell: bold name
 parts. `part_count`, `open_items`, `last_activity` come straight off the
 rollup.
 
-Below it, a **Purchase history** group for `one_offs` — project-less
-master-list parts, mostly swept from email: Part · Vendor · Qty · Total ·
-When (`ordered_at`). A rare undelivered one-off gets its status chip.
+One-offs do NOT get a duplicate table here — they live in the lifecycle
+tabs (see Step 2). The Vendors tab is the who, the lifecycle tabs are the
+what.
 
 ### Action buttons — the MCP bridge
 
