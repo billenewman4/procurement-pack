@@ -17,14 +17,14 @@ candidates — read no more than sender/subject/snippet before discarding
 them, and never store, summarize, quote, or reference any email outside
 classified purchase emails.
 
-**Window:** 6 months by default. Say so up front, and offer to sweep deeper
-on request.
+**Window:** 2 weeks by default. Say so up front, and offer to sweep deeper
+(months, or everything) on request.
 
 ## Step 1 — Retrieve broadly, classify precisely
 
 Three passes, cheap fields only (sender/subject/snippet):
 
-1. `category:purchases newer_than:6m` — Gmail's own purchase classifier is
+1. `category:purchases newer_than:14d` — Gmail's own purchase classifier is
    the best single source; start here. Known quirk: combining `category:`
    with date operators can return empty — if it does, run
    `category:purchases` bare and filter to the window by each result's date.
