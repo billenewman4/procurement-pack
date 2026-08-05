@@ -30,21 +30,25 @@ after(async () => { await empty.close(); await seeded.close(); await swept.close
 test('new user gets the linear onboarding flow', async () => {
   const text = await getStartedText(empty);
   assert.match(text, /NEW USER/);
-  // step 0: all four skill save-cards, before anything else
+  // step 0: welcome-gate — explain, then stop and wait for "continue"
+  assert.ok(
+    text.indexOf('STEP 0') < text.indexOf('STEP 1'),
+    'welcome comes before the skills+sweep step');
+  assert.match(text, /WELCOME, before anything else/);
+  assert.match(text, /Ready\? Say continue\./);
+  assert.match(text, /Do not fetch\s+skills, call tools/);
+  // step 1a: all four skill save-cards, before the sweep runs
   assert.match(text, /skills\/vendor-sweep\/SKILL\.md/);
   assert.match(text, /skills\/part-search\/SKILL\.md/);
   assert.match(text, /skills\/gmail-orders\/SKILL\.md/);
   assert.match(text, /skills\/bom-dashboard\/SKILL\.md/);
   assert.match(text, /github\.com\/billenewman4\/procurement-pack/);
   assert.ok(
-    text.indexOf('STEP 0') < text.indexOf('STEP 1'),
-    'skills install before the vendor question');
-  assert.ok(
-    text.indexOf('vendor-sweep') < text.indexOf('scan\nyour last 6 months'),
-    'skill fetch precedes the Gmail ask');
-  // step 1: the single Gmail consent question, verbatim pieces
-  assert.match(text, /scan\s+your last 6 months of email/i);
-  assert.match(text, /everything before saving/i);
+    text.indexOf('Save these while I go through your email') < text.indexOf('run the sweep'),
+    'skill cards precede the sweep in step 1');
+  // continue doubles as email consent; everything shown before saving
+  assert.match(text, /"continue" counts as email consent/);
+  assert.match(text, /NOTHING is saved until they approve/);
   // fallback: exactly the two alternatives
   assert.match(text, /Paste or upload a parts list/i);
   assert.match(text, /Start clean/i);
