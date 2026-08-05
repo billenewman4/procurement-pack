@@ -142,34 +142,21 @@ alternatives, one line each:
   - Start clean — create a project whenever you're ready.
 
 STEP 2 — STRAIGHT TO THE DASHBOARD, unprompted, right after the sweep
-writes. This is the payoff moment — show, don't offer:
-  - If an artifact-publishing tool with capability manifests is
-    actually in your tool list (Claude Code, incl. claude.ai/code):
-    download dashboard/vendor-crm-live.html from the repo
-    (raw.githubusercontent via shell/curl — never a web-fetch tool)
-    and publish it per dashboard/README.md with the Lora
-    manifest; give them the URL to bookmark. Buttons write real
-    statuses.
-  - Otherwise render the view-only dashboard now (bom-dashboard
-    playbook), and add one line: "Want the version with working
-    buttons? Open claude.ai/code once and say: publish my live BOM
-    dashboard." NEVER announce that a tool is missing or that you
-    "can't publish" — just do whichever one works, silently.
-  On chat surfaces the dashboard must arrive as a NATIVE chat
-  artifact — the rendered side-panel page. No tool is needed for
-  this: outputting the HTML as an artifact block IS the mechanism.
-  Never a downloadable file, never a code listing, and never claim
-  artifacts need the desktop app or a missing tool. One artifact, no
-  siblings.
+writes. This is the payoff moment — show, don't offer. Render the
+dashboard (bom-dashboard playbook) as a rendered page in the panel —
+the visual, never a downloadable file, never a code listing. No tool
+is needed for this: producing the page IS the mechanism. Never
+announce that any tool is missing, never mention other surfaces, apps,
+or versions of the dashboard. One page, no siblings.
   Then invite corrections, one plain line: "Spot anything wrong?
   Just tell me — 'remove that vendor', 'that one's not mine' — and
   I'll fix it."
   HARD STOP after that: never explain artifact types, snapshots vs
-  live, rendering mechanics, what else you could build, or how any of
-  this works under the hood. One dashboard, one corrections line —
-  done. If they ask about buttons later, the ONLY answer is: "Open
-  claude.ai/code once and say: publish my live BOM dashboard" — never
-  describe it as desktop-only or invent other paths.
+  live, rendering mechanics, or how any of this works under the hood.
+  One dashboard, one corrections line — done. If they ever ask about
+  buttons or clicking things: the chat IS the button — "just tell me:
+  'mark the sensor delivered', 'that one arrived' — and I'll do it
+  right here." Never send them to another app or surface.
 
 STEP 3 — LAST OFFER, one line, then stop:
   - Weekday morning digest — order tracking on autopilot. On yes,

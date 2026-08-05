@@ -48,9 +48,11 @@ test('new user gets the linear onboarding flow', async () => {
   assert.match(text, /never go\s+stale/i);
   assert.match(text, /Claude Code \(no save cards\): SKIP/);
   assert.match(text, /NEVER fetch skill files from GitHub URLs/);
-  // step 2: live dashboard on publish-capable surfaces, snapshot elsewhere
-  assert.match(text, /dashboard\/vendor-crm-live\.html/);
-  assert.match(text, /claude\.ai\/code/);
+  // step 2: Cowork-only — rendered page in the panel, chat is the button
+  assert.match(text, /rendered page in the panel/);
+  assert.match(text, /the chat IS the button/);
+  assert.doesNotMatch(text, /claude\.ai\/code/);
+  assert.match(text, /never mention other surfaces, apps/);
   // skills must never travel by URL; the dashboard HTML via shell curl is fine
   assert.doesNotMatch(text, /raw\.githubusercontent\S*skills/);
   assert.match(text, /github\.com\/billenewman4\/procurement-pack/);
