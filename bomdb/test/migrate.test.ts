@@ -205,6 +205,20 @@ test('order_events gain an owner scope and a nullable project_id', async () => {
      VALUES (NULL, NULL, $1, 'X', 'issue', now(), 'one-off event post-migration')`, [ids.eshan]);
 });
 
+test('sourcing_slug column exists, nullable, and is writable post-migration', async () => {
+  const [col] = await engine.query<{ is_nullable: string }>(
+    `SELECT is_nullable FROM information_schema.columns
+     WHERE table_name = 'vendors' AND column_name = 'sourcing_slug'`);
+  assert.ok(col, 'sourcing_slug column missing after migration');
+  assert.equal(col.is_nullable, 'YES');
+  const [amazon] = await engine.query<{ id: string }>(
+    `SELECT id FROM vendors WHERE lower(name) = 'amazon' AND user_id = $1`, [ids.eshan]);
+  const [updated] = await engine.query<{ sourcing_slug: string }>(
+    `UPDATE vendors SET sourcing_slug = 'amazon-business' WHERE id = $1 RETURNING sourcing_slug`,
+    [amazon.id]);
+  assert.equal(updated.sourcing_slug, 'amazon-business');
+});
+
 test('rerunning the migration changes nothing', async () => {
   const snapshot = async () => ({
     vendors: (await engine.query<{ n: number }>(`SELECT count(*)::int AS n FROM vendors`))[0].n,

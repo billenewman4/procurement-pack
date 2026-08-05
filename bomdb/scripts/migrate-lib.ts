@@ -40,6 +40,11 @@ export async function migrate(engine: Engine): Promise<void> {
     await engine.query(
       `CREATE UNIQUE INDEX IF NOT EXISTS vendors_user_lower_name
        ON vendors ((COALESCE(user_id::text, '')), lower(name))`);
+    // 2026-08-04 sourcing-agent v2: canonical vendor slug from connect_vendor.
+    // A plain ALTER, not part of the CREATE TABLE above — that statement is
+    // IF NOT EXISTS and no-ops on a vendors table that already exists from an
+    // earlier run of this same migration.
+    await engine.query(`ALTER TABLE vendors ADD COLUMN IF NOT EXISTS sourcing_slug text`);
     await engine.query(`ALTER TABLE line_items ADD COLUMN IF NOT EXISTS vendor_id uuid REFERENCES vendors(id)`);
     await engine.query(`ALTER TABLE line_items ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES users(id)`);
     await engine.query(`ALTER TABLE line_items ADD COLUMN IF NOT EXISTS active boolean NOT NULL DEFAULT true`);

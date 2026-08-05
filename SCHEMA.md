@@ -13,6 +13,11 @@ added; line_items gains `vendor_id`, `user_id`, `active` and a nullable
 `researching → rfq → po_placed → delivered` — `shipped`/`issue` are
 order_events now, not statuses.
 
+**Amended 2026-08-04 (sourcing-agent v2 integration):** vendors gains
+`sourcing_slug` — the canonical slug the hosted sourcing-agent assigns a
+vendor via `connect_vendor` (domain-derived, e.g. newark.com →
+"element14"). Used as the `vendors` filter on `source_quote`.
+
 ## vendors (the vendor CRM)
 | col | type | notes |
 |---|---|---|
@@ -25,6 +30,7 @@ order_events now, not statuses.
 | notes | text | nullable |
 | source | enum | `email_sweep` \| `manual` \| `sourcing_agent` |
 | active | boolean | false hides a vendor without deleting it |
+| sourcing_slug | text | nullable — canonical slug from the sourcing agent's `connect_vendor`; feeds `source_quote`'s `vendors` filter |
 | created_at / updated_at | timestamptz | |
 
 ## users (hosted mode only)

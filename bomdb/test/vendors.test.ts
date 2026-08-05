@@ -125,3 +125,33 @@ test('rename_project renames and errors cleanly on a bad id', async () => {
   }) as { error: string };
   assert.match(missing.error, /not found/);
 });
+
+test('upsert_vendor round-trips sourcing_slug, filling blank and overwriting on demand', async () => {
+  const created = await runOp(engine, 'upsert_vendor', {
+    name: 'Newark', domains: ['newark.com'], sourcing_slug: 'element14',
+  }) as { id: string; sourcing_slug: string };
+  assert.equal(created.sourcing_slug, 'element14');
+
+  // omitted on a later call: existing slug survives (COALESCE keeps it)
+  const untouched = await runOp(engine, 'upsert_vendor', {
+    name: 'Newark', notes: 'fast shipping',
+  }) as { id: string; sourcing_slug: string };
+  assert.equal(untouched.id, created.id);
+  assert.equal(untouched.sourcing_slug, 'element14');
+
+  // explicitly passed: overwrites
+  const updated = await runOp(engine, 'upsert_vendor', {
+    name: 'Newark', sourcing_slug: 'newark-v2',
+  }) as { sourcing_slug: string };
+  assert.equal(updated.sourcing_slug, 'newark-v2');
+
+  // list_vendors surfaces it too
+  const vendors = await runOp(engine, 'list_vendors', {}) as { name: string; sourcing_slug: string }[];
+  const v = vendors.find(x => x.name === 'Newark')!;
+  assert.equal(v.sourcing_slug, 'newark-v2');
+});
+
+test('upsert_vendor leaves sourcing_slug null when never provided', async () => {
+  const created = await runOp(engine, 'upsert_vendor', { name: 'NoSlugCo' }) as { sourcing_slug: string | null };
+  assert.equal(created.sourcing_slug, null);
+});

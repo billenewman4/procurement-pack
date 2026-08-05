@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS vendors (
   source text NOT NULL DEFAULT 'manual'
     CHECK (source IN ('email_sweep','manual','sourcing_agent')),
   active boolean NOT NULL DEFAULT true,
+  sourcing_slug text,                         -- canonical slug from the sourcing agent (connect_vendor)
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

@@ -25,7 +25,7 @@ async function upsertVendorRow(
   engine: Engine,
   p: {
     name: string; domains?: unknown; contact_email?: unknown; website?: unknown;
-    notes?: unknown; source?: unknown; active?: unknown;
+    notes?: unknown; source?: unknown; active?: unknown; sourcing_slug?: unknown;
   },
 ): Promise<Record<string, unknown>> {
   const name = p.name.trim();
@@ -47,17 +47,18 @@ async function upsertVendorRow(
          website = COALESCE($4, website),
          notes = COALESCE($5, notes),
          active = COALESCE($6, active),
+         sourcing_slug = COALESCE($7, sourcing_slug),
          updated_at = now()
        WHERE id = $1 RETURNING *`,
-      [match.id, domains, p.contact_email, p.website, p.notes, p.active]);
+      [match.id, domains, p.contact_email, p.website, p.notes, p.active, p.sourcing_slug]);
     return rows[0];
   }
   const rows = await engine.query(
-    `INSERT INTO vendors (user_id, name, domains, contact_email, website, notes, source, active)
+    `INSERT INTO vendors (user_id, name, domains, contact_email, website, notes, source, active, sourcing_slug)
      VALUES ((SELECT id FROM users WHERE pg_role = current_user),
-             $1, $2::text[], $3, $4, $5, COALESCE($6, 'manual'), COALESCE($7, true))
+             $1, $2::text[], $3, $4, $5, COALESCE($6, 'manual'), COALESCE($7, true), $8)
      RETURNING *`,
-    [name, domains, p.contact_email, p.website, p.notes, p.source, p.active]);
+    [name, domains, p.contact_email, p.website, p.notes, p.source, p.active, p.sourcing_slug]);
   return rows[0];
 }
 
@@ -176,6 +177,10 @@ export const operations: Operation[] = [
       notes: { type: 'string' },
       source: { type: 'string', enum: ['email_sweep', 'manual', 'sourcing_agent'] },
       active: { type: 'boolean', description: 'Set false to hide a vendor without deleting it' },
+      sourcing_slug: {
+        type: 'string',
+        description: 'Canonical vendor slug from the sourcing agent (connect_vendor) — use it in source_quote\'s vendors filter',
+      },
     },
     handler: (engine, p) => upsertVendorRow(engine, p as { name: string }),
   },
