@@ -28,7 +28,7 @@ export const GET_SKILL_TOOL = {
 // cards can never go stale.
 const STUB_DESCRIPTIONS: Record<string, string> = {
   'vendor-sweep':
-    'Use when building or refreshing the user\'s vendor list from purchase history in email — "set up my vendors", "scan my email for vendors", "who do I buy from" — or when invoked by the bomdb onboarding flow. Read-only until the user confirms.',
+    'Use when building or refreshing the user\'s vendor list from purchase history in email — "set up my vendors", "scan my email for vendors", "who do I buy from" — or when invoked by the bomdb onboarding flow. Confident findings write immediately; ambiguous ones stay out.',
   'part-search':
     'Use when the user wants to find, source, compare, or buy a physical part or component — screws, fasteners, connectors, circuit boards, sensors, converters, raw material — or asks "where can I get X", mentions McMaster/Digi-Key/Amazon/Mouser, or is building a BOM.',
   'gmail-orders':

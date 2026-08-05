@@ -1,16 +1,17 @@
 ---
 name: vendor-sweep
-description: Use when building or refreshing the user's vendor list from purchase history in email — "set up my vendors", "scan my email for vendors", "who do I buy from" — or when invoked by the bomdb onboarding flow. Read-only until the user confirms.
+description: Use when building or refreshing the user's vendor list from purchase history in email — "set up my vendors", "scan my email for vendors", "who do I buy from" — or when invoked by the bomdb onboarding flow. Confident findings write immediately; ambiguous ones stay out.
 ---
 
 # Vendor Sweep
 
 ## Overview
 
-One read-only sweep of the user's Gmail to build their vendor CRM: every
-supplier they've bought from, with the parts bought from each. The output is
-a proposal — NOTHING is written until the user confirms it in this
-conversation.
+One sweep of the user's Gmail to build their vendor CRM: every supplier
+they've bought from, with the parts bought from each. Starting the sweep is
+the consent: confident findings write immediately (the email is the
+evidence), ambiguous ones stay out, and the user edits conversationally
+afterward — the dashboard is where they review, not an approval table.
 
 **Privacy contract:** classification may surface non-purchase emails as
 candidates — read no more than sender/subject/snippet before discarding
@@ -52,26 +53,31 @@ list for the user to judge — never silently included, never silently
 dropped. Dedup vendors by email domain and case-insensitive name
 (mcmaster.com + "McMaster-Carr" + "mcmaster carr" = one vendor).
 
-## Step 3 — Propose declaratively, then STOP
+## Step 3 — Write immediately, report simply
 
-Present compactly, as a plan — not a questionnaire:
+The user already consented to the sweep (starting it IS the consent —
+the email evidence speaks for itself). No proposal table, no approval
+pause:
 
-1. **Vendors table** — name, domain(s), purchases seen, last seen.
-2. **Parts table** — description, vendor, date, amount, evidence quote.
-3. **Not-sure list** — rows below the confidence gate, one line each,
-   EXCLUDED by default: "I left these out — say the word to include any."
+1. **Write every confident row now.** Ambiguous rows stay OUT — never
+   silently included. Physical goods only, strictly: software/SaaS
+   receipts, subscriptions, memberships, and personal shopping NEVER
+   become vendors, no matter how invoice-shaped the email looks.
+2. **Report in one short, plain beat:** "I found 4 vendors and 8 parts
+   in your email and added them to your list." One extra line if
+   anything was left out: "I skipped a few I wasn't sure about — ask
+   and I'll show you." No tables, no technical language (never say
+   dedupe, one-off, line item, confidence).
+3. **Then show, don't tell:** go straight to the dashboard so they see
+   their vendor list, and invite corrections — "spot anything wrong?
+   Just tell me and I'll fix it." Edits happen after, conversationally
+   (remove a vendor, rename, add something missed).
 
-Close with one declarative line: "I'll add all of this to your vendor
-list now — any edits first?" Then STOP and wait for their reply. Their
-go-ahead (or edits, or silence-breaking "go") is the confirmation.
-NEVER write before that reply — the pause is the consent, the phrasing
-is just confident.
+## Step 4 — How to write
 
-## Step 4 — Write on confirmation only
-
-Per confirmed vendor: `upsert_vendor` with source `email_sweep` and the
-domains array. Then per confirmed part: `upsert_line_item` with the vendor
-NAME (auto-links to the CRM), NO project_id (historical purchases are
+Per vendor: `upsert_vendor` with source `email_sweep` and the domains
+array. Then per part: `upsert_line_item` with the vendor NAME
+(auto-links to the CRM), NO project_id (historical purchases are
 one-offs), source `email`, and the evidence quote in `notes`.
 
 Status must match what the email trail actually shows:
@@ -87,7 +93,7 @@ Status must match what the email trail actually shows:
 
 ## Common mistakes
 
-- Writing before the user confirms — the proposal step is the product.
+- Pausing for approval before writing — starting the sweep was the consent; the dashboard is the review surface.
 - Inferring amounts, dates, or part names not literally in the email.
 - Reading full bodies before classification — snippet-only until then.
 - Counting SaaS receipts, subscriptions, or personal shopping as vendors.

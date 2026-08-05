@@ -35,7 +35,11 @@ test('new user gets the linear onboarding flow', async () => {
     text.indexOf('STEP 0') < text.indexOf('STEP 1'),
     'welcome comes before the skills+sweep step');
   assert.match(text, /WELCOME, before anything else/);
-  assert.match(text, /Ready\? Say continue\./);
+  assert.match(text, /Ready\? Say\s+continue\./);
+  // welcome host: four capability bullets, support emails, plain-language rule
+  assert.match(text, /exactly four SPACED bullets/);
+  assert.match(text, /eshan@getlora\.ai\s+and bill@getlora\.ai/);
+  assert.match(text, /never say MCP, connector, tool\s+names, dedupe/);
   assert.match(text, /Do not fetch\s+skills, call tools/);
   // step 1a: surface-conditional — stub cards on chat, silent skip in Code
   assert.match(text, /get_skill/);
@@ -54,13 +58,19 @@ test('new user gets the linear onboarding flow', async () => {
     text.indexOf('Save these while I go through your email') < text.indexOf('run the sweep'),
     'skill cards precede the sweep in step 1');
   // continue doubles as email consent; everything shown before saving
-  assert.match(text, /"continue" counts as email consent/);
-  assert.match(text, /NOTHING is saved until they approve/);
+  assert.match(text, /"continue" is their email consent/);
+  // auto-write flow: no approval pause, dashboard is the review surface
+  assert.match(text, /WRITE THE CONFIDENT FINDINGS IMMEDIATELY/);
+  assert.match(text, /no approval pause/);
+  assert.match(text, /STRAIGHT TO THE DASHBOARD/);
+  assert.match(text, /Spot anything wrong\?/);
+  assert.match(text, /NEVER announce that a tool is missing/);
+  assert.doesNotMatch(text, /any\s+edits first\?/);
   // fallback: exactly the two alternatives
   assert.match(text, /Paste or upload a parts list/i);
   assert.match(text, /Start clean/i);
   // consent rule survives
-  assert.match(text, /IN\s+THIS CONVERSATION/);
+  assert.match(text, /IN THIS conversation/);
   // historical writes: one-offs, delivered, from email
   assert.match(text, /NO\s+project_id/);
   assert.match(text, /'delivered'/);
