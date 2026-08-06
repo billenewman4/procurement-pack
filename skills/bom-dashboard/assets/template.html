@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BOM Dashboard</title>
+<title>LORA — Procurement</title>
 <style>
 /* Barlow + Barlow Condensed, extracted from the Lora Procurement App design export.
    Self-contained: woff2 embedded as data: URIs (artifact CSP allows font-src data:). */
@@ -162,9 +162,6 @@
   --shadow-md: 0 3px 10px color-mix(in srgb, #2b2b2d 16%, transparent);
   --muted: color-mix(in srgb, var(--color-text) 55%, transparent);
   --muted-60: color-mix(in srgb, var(--color-text) 60%, transparent);
-  --issue: #d03b3b;
-  --stale: #ec835a;
-  --ok: #3e7d4e;
 }
 *, *::before, *::after { box-sizing: border-box; }
 body { margin: 0; background: var(--color-bg); color: var(--color-text);
@@ -194,13 +191,12 @@ a { color: var(--color-accent); text-underline-offset: 3px; }
   font-size: 14px; line-height: 1.2; color: var(--color-text);
   background: transparent; border: 1px solid var(--color-divider);
   padding: 7px 12px; border-radius: 0; }
-.btn:disabled { opacity: .45; cursor: default; }
 .btn-primary { background: var(--color-accent); color: var(--color-bg); border-color: var(--color-accent); }
-.btn-primary:hover:not(:disabled) { background: #597ea3; }
-.btn-secondary:hover:not(:disabled) { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.btn-primary:hover { background: #597ea3; }
+.btn-secondary:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
 
 .tag { display: inline-flex; align-items: center; font-size: 11px; letter-spacing: 0.02em;
-  padding: 3px 10px; border-radius: 0; white-space: nowrap; }
+  padding: 3px 10px; border-radius: 0; }
 .tag-soft { background: var(--color-accent-100); color: var(--color-accent-800); }
 .tag-solid { background: var(--color-accent-900); color: var(--color-bg); }
 .tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent); }
@@ -213,6 +209,7 @@ a { color: var(--color-accent); text-underline-offset: 3px; }
 .table tbody tr:hover { background: color-mix(in srgb, var(--color-accent) 6%, transparent); }
 .table .r { text-align: right; }
 
+/* app shell */
 .shell { display: grid; grid-template-columns: 198px 1fr; min-height: 100vh; }
 aside { border-right: 1px solid var(--color-divider); padding: 18px 14px;
   display: flex; flex-direction: column; gap: 22px;
@@ -222,30 +219,31 @@ aside { border-right: 1px solid var(--color-divider); padding: 18px 14px;
 .logo .mk i { position: absolute; inset: 5px; background: var(--color-accent); }
 .logo span { font-family: var(--font-heading); font-weight: 600; font-size: 19px; letter-spacing: .14em; }
 nav { display: flex; flex-direction: column; gap: 2px; }
-.nav-it { display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+.nav-it { display: flex; align-items: center; gap: 10px; padding: 9px 10px; font-size: 13.5px;
   cursor: pointer; border: 0; background: transparent; color: inherit; font: inherit;
   font-size: 13.5px; text-align: left; width: 100%; }
 .nav-it:not(.on):hover { background: color-mix(in srgb, var(--color-text) 6%, transparent); }
 .nav-it.on { background: var(--color-accent-100); color: var(--color-accent-800);
   box-shadow: inset 2px 0 0 var(--color-accent); }
 .nav-it .badge { margin-left: auto; font-size: 11px; color: var(--color-accent-700); }
-.side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
-.conn { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-.conn .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: none; }
-.conn.live .dot { background: var(--ok); }
-.conn.err .dot { background: var(--issue); }
-.asof { font-size: 11.5px; color: var(--muted); }
-.stalenote { font-size: 11.5px; color: var(--stale); }
+.asof { margin-top: auto; font-size: 11.5px; color: var(--muted); }
 
 main { display: flex; flex-direction: column; min-width: 0; }
 .screen { display: none; flex-direction: column; }
 .screen.on { display: flex; }
 .head { padding: 26px 32px 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .pad { padding: 20px 32px 28px; }
+.searchbar { margin: 20px 32px 0; display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.searchbar input { flex: 1; border: none; background: transparent; outline: none;
+  font-family: var(--font-heading); font-size: 19px; letter-spacing: .02em;
+  color: var(--color-text); min-width: 0; }
+.searchbar .n { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
 .lead17 { font-family: var(--font-heading); font-weight: 400; font-size: 17px; letter-spacing: -0.015em; }
 .lead19 { font-family: var(--font-heading); font-weight: 400; font-size: 19px; letter-spacing: -0.015em; }
 .lead16 { font-family: var(--font-heading); font-weight: 400; font-size: 16.5px; letter-spacing: -0.015em; }
 .money { font-family: var(--font-heading); font-weight: 400; font-size: 16px; letter-spacing: -0.015em; }
+.money18 { font-family: var(--font-heading); font-weight: 400; font-size: 18px; letter-spacing: -0.015em; }
 .sub { font-size: 12.5px; color: var(--muted); }
 .sub115 { font-size: 11.5px; color: var(--muted); }
 .sub12 { font-size: 12px; color: var(--muted); }
@@ -256,427 +254,382 @@ main { display: flex; flex-direction: column; min-width: 0; }
   display: grid; place-items: center; flex: none; }
 .empty { padding: 34px 8px; font-size: 13.5px; color: var(--muted); }
 .h5kick { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 12px;
-  color: var(--muted-60); }
+  color: var(--muted-60); font-family: var(--font-body); font-weight: 400; }
+.stale-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: #ec835a; vertical-align: middle; margin: 0 5px 0 8px; }
 .issue-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-  background: var(--issue); vertical-align: middle; margin: 0 5px 0 8px; }
-.rowerr { font-size: 12.5px; color: var(--issue); padding: 4px 8px 10px; }
-.vn { font-family: var(--font-heading); font-weight: 400; font-size: 17px; letter-spacing: -0.015em; }
+  background: #d03b3b; vertical-align: middle; margin: 0 5px 0 8px; }
+
+#toast { position: fixed; bottom: 22px; right: 26px; padding: 13px 17px;
+  background: var(--color-bg); box-shadow: var(--shadow-md); font-size: 13.5px;
+  max-width: 380px; z-index: 40; display: none; }
+#toast.on { display: block; }
+
 .tw { overflow-x: auto; }
-
-.statewrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
-.state { max-width: 460px; padding: 26px 28px; background: var(--color-bg); }
-.state h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
-  font-size: 26px; letter-spacing: -0.015em; margin: 0 0 8px; }
-.state p { margin: 0 0 6px; font-size: 14.5px; }
-.state .hint { font-size: 12.5px; color: var(--muted); }
-.hidden { display: none !important; }
-
 @media (max-width: 719px) {
   .shell { grid-template-columns: 1fr; }
   aside { position: static; height: auto; flex-direction: row; align-items: center;
     flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--color-divider); }
   nav { flex-direction: row; flex-wrap: wrap; }
   .nav-it.on { box-shadow: inset 0 -2px 0 var(--color-accent); }
-  .side-foot { margin: 0; width: 100%; }
+  .asof { margin: 0; width: 100%; }
   .head, .pad { padding-left: 16px; padding-right: 16px; }
+  .searchbar { margin-left: 16px; margin-right: 16px; }
 }
 </style>
 </head>
 <body>
-<div id="app" class="shell hidden">
+<div class="shell">
   <aside>
     <div class="logo"><div class="mk"><i></i></div><span>LORA</span></div>
     <nav id="nav"></nav>
-    <div class="side-foot">
-      <div class="conn" id="conn"><span class="dot"></span><span id="connText">connecting…</span></div>
-      <div class="asof" id="asof"></div>
-      <div class="stalenote" id="stale"></div>
-    </div>
+    <div class="asof" id="asof"></div>
   </aside>
   <main id="main"></main>
 </div>
-<div id="stateBox" class="statewrap">
-  <div class="state blueprint"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-    <h2 id="stH">Connecting</h2><p id="stP">Looking for your BOM connector…</p><div class="hint" id="stHint"></div>
-  </div>
-</div>
+<div id="toast" class="blueprint"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><span id="toast-msg"></span></div>
 
+<script id="lora-data" type="application/json">__LORA_DATA__</script>
 <script>
 (function () {
-'use strict';
-var DASH = 'get_dashboard_data', SET = 'update_status';
-var server = null, unsub = null, lastGood = null, activeScreen = 'parts';
-var $ = function (id) { return document.getElementById(id); };
+  'use strict';
+  var DATA = JSON.parse(document.getElementById('lora-data').textContent);
 
-/* ---------- helpers ---------- */
-function h(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
-function money(n) { return '$' + (Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function fmtDate(s) { if (!s) return ''; var d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
-function fmtTime(ms) { var d = new Date(ms); return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); }
-function unitPrice(it) { var p = parseFloat(it.unit_price); return isNaN(p) ? null : p; }
-function rowTotal(it) { var p = unitPrice(it); return p == null ? null : (it.qty || 1) * p; }
-function icon(paths, size, stroke, sw) {
-  var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('width', size || 15); svg.setAttribute('height', size || 15);
-  svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none');
-  svg.setAttribute('stroke', stroke || 'currentColor'); svg.setAttribute('stroke-width', sw || '1.5');
-  paths.forEach(function (d) {
-    var p = document.createElementNS('http://www.w3.org/2000/svg', d[0]);
-    Object.keys(d[1]).forEach(function (k) { p.setAttribute(k, d[1][k]); });
-    svg.appendChild(p);
-  });
-  return svg;
-}
-var ICONS = {
-  parts: [['rect', { x: 7, y: 7, width: 10, height: 10 }], ['path', { d: 'M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4' }]],
-  boms: [['path', { d: 'M4 6h4v4H4zM4 14h4v4H4zM11 8h9M11 16h9' }]],
-  cart: [['path', { d: 'M3 4h2l2.6 11h10L20 7H6' }], ['circle', { cx: 9, cy: 19, r: 1.4 }], ['circle', { cx: 17, cy: 19, r: 1.4 }]],
-  rfqs: [['path', { d: 'M21 3 3 10l7 3 3 7z' }]],
-  orders: [['path', { d: 'M4 7 12 3l8 4v10l-8 4-8-4z' }], ['path', { d: 'M4 7l8 4 8-4M12 11v10' }]],
-  vendors: [['path', { d: 'M4 21v-9l8-6 8 6v9h-6v-6h-4v6z' }]]
-};
-var SCREENS = [
-  { key: 'parts', label: 'Parts' },
-  { key: 'boms', label: 'BOMs' },
-  { key: 'cart', label: 'Cart' },
-  { key: 'rfqs', label: 'RFQs' },
-  { key: 'orders', label: 'Orders' },
-  { key: 'vendors', label: 'Vendors' }
-];
-
-function setConn(cls, text) { var c = $('conn'); c.className = 'conn ' + cls; $('connText').textContent = text; }
-function showState(title, body, hint) { $('stateBox').classList.remove('hidden'); $('app').classList.add('hidden'); $('stH').textContent = title; $('stP').textContent = body; $('stHint').textContent = hint || ''; }
-function showApp() { $('stateBox').classList.add('hidden'); $('app').classList.remove('hidden'); }
-
-var FIX = {
-  needs_reauth: function (s) { return ['Reconnect your BOM', 'Your connector needs to be reconnected.', 'Reconnect "' + s + '" in claude.ai Settings → Connectors, then reload.']; },
-  server_not_connected: function (s) { return ['Add your BOM connector', 'This dashboard reads your BOM through a claude.ai connector.', 'Add "' + (s || 'Lora') + '" in claude.ai Settings → Connectors, then reload.']; },
-  blocked_by_policy: function () { return ['Blocked by policy', 'Your organization blocks this tool for your account.', '']; },
-  approval_required: function () { return ['Approval needed', 'This tool needs per-call approval, which artifacts can’t provide yet.', '']; }
-};
-
-/* ---------- table + row primitives ---------- */
-function table(headers, rightLast) {
-  var wrap = h('div', 'tw'), t = h('table', 'table');
-  var thead = h('thead'), tr = h('tr');
-  headers.forEach(function (k, i) {
-    var th = h('th', rightLast && i === headers.length - 1 ? 'r' : null, k);
-    tr.appendChild(th);
-  });
-  thead.appendChild(tr); t.appendChild(thead);
-  var tbody = h('tbody'); t.appendChild(tbody); wrap.appendChild(t);
-  return { wrap: wrap, tbody: tbody };
-}
-function stack(lead, leadCls, sub, subCls, subFirst) {
-  var d = h('div'), l = h('div', leadCls, lead);
-  var s = sub ? h('div', subCls, sub) : null;
-  if (subFirst && s) { d.appendChild(s); d.appendChild(l); }
-  else { d.appendChild(l); if (s) d.appendChild(s); }
-  return d;
-}
-function chip(text, variant) { return h('span', 'tag tag-' + variant, text); }
-function nameCell(it, cls) {
-  var d = h('div');
-  if (it.part_number) d.appendChild(h('div', 'sub115', it.part_number));
-  var l = h('div', cls || 'lead16');
-  if (it.product_url) { var a = h('a', null, it.description || '(unnamed part)'); a.href = it.product_url; a.rel = 'noopener'; l.appendChild(a); }
-  else l.textContent = it.description || '(unnamed part)';
-  d.appendChild(l);
-  return d;
-}
-
-/* ---------- live actions ---------- */
-function actBtn(it, label, to, primary) {
-  var b = h('button', 'btn ' + (primary ? 'btn-primary' : 'btn-secondary'), label);
-  b.addEventListener('click', function () {
-    var old = b.textContent;
-    b.disabled = true; b.textContent = 'Saving…';
-    window.claude.mcp.callTool(server, SET, { line_item_id: it.id, status: to }).then(function () {
-      return window.claude.mcp.invalidate(server, DASH).catch(function () {});
-    }).then(function () {
-      b.textContent = 'Saved';
-    }).catch(function (err) {
-      b.disabled = false; b.textContent = old;
-      var msg;
-      if (err && err.code === 'tool_error') msg = err.message || 'The update was rejected.';
-      else if (err && (err.code === 'server_unavailable' || err.code === 'upstream_error')) msg = 'Couldn’t confirm the update reached the server — check the row after the next refresh before retrying.';
-      else if (err && FIX[err.code]) msg = FIX[err.code](server)[2];
-      else msg = (err && err.message) || 'Update failed.';
-      var td = b.closest('td');
-      var e = td.appendChild(h('div', 'rowerr', msg));
-      setTimeout(function () { if (e.parentNode) e.parentNode.removeChild(e); }, 8000);
+  /* ---------- tiny DOM helpers (textContent only — data is never HTML) ---------- */
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function icon(paths, size, stroke) {
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', size || 15); svg.setAttribute('height', size || 15);
+    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', stroke || 'currentColor'); svg.setAttribute('stroke-width', '1.5');
+    paths.forEach(function (d) {
+      var kind = d[0], attrs = d[1];
+      var p = document.createElementNS('http://www.w3.org/2000/svg', kind);
+      Object.keys(attrs).forEach(function (k) { p.setAttribute(k, attrs[k]); });
+      svg.appendChild(p);
     });
-  });
-  return b;
-}
-function actionCell(buttons) {
-  var td = h('td', 'r');
-  var wrap = h('span'); wrap.style.cssText = 'display:inline-flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap';
-  buttons.forEach(function (b) { wrap.appendChild(b); });
-  td.appendChild(wrap);
-  return td;
-}
-function statusBits(td, it) {
-  if (it.shipped) td.appendChild(chip('Shipped', 'soft'));
-  else td.appendChild(chip('Ordered', 'outline'));
-  if (it.open_issue) {
-    td.appendChild(h('span', 'issue-dot'));
-    td.appendChild(h('span', 'sub12', 'issue'));
+    return svg;
   }
-}
+  var ICONS = {
+    parts: [['rect', { x: 7, y: 7, width: 10, height: 10 }], ['path', { d: 'M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4' }]],
+    boms: [['path', { d: 'M4 6h4v4H4zM4 14h4v4H4zM11 8h9M11 16h9' }]],
+    cart: [['path', { d: 'M3 4h2l2.6 11h10L20 7H6' }], ['circle', { cx: 9, cy: 19, r: 1.4 }], ['circle', { cx: 17, cy: 19, r: 1.4 }]],
+    rfqs: [['path', { d: 'M21 3 3 10l7 3 3 7z' }]],
+    orders: [['path', { d: 'M4 7 12 3l8 4v10l-8 4-8-4z' }], ['path', { d: 'M4 7l8 4 8-4M12 11v10' }]],
+    search: [['circle', { cx: 11, cy: 11, r: 7 }], ['path', { d: 'm20 20-4-4' }]],
+    vendors: [['path', { d: 'M4 21v-9l8-6 8 6v9h-6v-6h-4v6z' }]]
+  };
+  function H(key, def) { return (DATA.headers && DATA.headers[key]) || def; }
+  function money(n) { return '$' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function chip(text, variant) { return el('span', 'tag tag-' + (variant || 'soft'), text); }
 
-/* ---------- screens ---------- */
-function screenShell(key, title) {
-  var s = h('section', 'screen'); s.dataset.screen = key;
-  var head = h('div', 'head'); head.appendChild(h('h3', null, title));
-  s.appendChild(head);
-  var pad = h('div', 'pad'); s.appendChild(pad);
-  return { s: s, pad: pad, head: head };
-}
-
-function render(d) {
-  lastGood = d;
-  var projects = d.projects || [], oneOffs = d.one_offs || [], vendors = d.vendors || [];
-  var allItems = [];
-  projects.forEach(function (p) { (p.items || []).forEach(function (it) { it._proj = p.name; allItems.push(it); }); });
-  oneOffs.forEach(function (it) { it._proj = null; allItems.push(it); });
-
-  if (!allItems.length && !vendors.length) {
-    showState('Nothing here yet', 'Your workspace is empty. Say “set up Lora” in a Claude chat to build your vendor CRM from your email.', '');
-    return;
+  /* ---------- copy-to-chat buttons + toast ---------- */
+  var toastT;
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('on');
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { t.classList.remove('on'); }, 2200);
   }
-  showApp();
+  function copyCmd(text) {
+    function done() { toast('Copied — paste it to me in chat'); }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { toast('Copy failed — tell me in chat: ' + text); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else fallback();
+  }
+  function cmdBtn(action) {
+    var b = el('button', 'btn ' + (action.primary ? 'btn-primary' : 'btn-secondary'), action.label);
+    b.addEventListener('click', function (e) { e.stopPropagation(); copyCmd(action.cmd); });
+    return b;
+  }
+  function actionCell(actions) {
+    var td = el('td', 'r');
+    var wrap = el('span'); wrap.style.cssText = 'display:inline-flex;gap:10px;justify-content:flex-end;align-items:center';
+    (actions || []).forEach(function (a) { wrap.appendChild(cmdBtn(a)); });
+    td.appendChild(wrap);
+    return td;
+  }
 
-  var researching = allItems.filter(function (it) { return it.status === 'researching'; });
-  var rfq = allItems.filter(function (it) { return it.status === 'rfq'; });
-  var ordered = allItems.filter(function (it) { return it.status === 'po_placed'; });
-  var delivered = allItems.filter(function (it) { return it.status === 'delivered'; });
+  /* ---------- generic table ---------- */
+  function table(headers, rightLast) {
+    var wrap = el('div', 'tw');
+    var t = el('table', 'table');
+    var thead = el('thead'), tr = el('tr');
+    headers.forEach(function (h, i) {
+      var th = el('th', null, h);
+      if (rightLast && i === headers.length - 1) th.classList.add('r');
+      tr.appendChild(th);
+    });
+    thead.appendChild(tr); t.appendChild(thead);
+    var tbody = el('tbody'); t.appendChild(tbody);
+    wrap.appendChild(t);
+    return { wrap: wrap, tbody: tbody };
+  }
+  function stack(lead, leadCls, sub, subCls, subFirst) {
+    var d = el('div');
+    var l = el('div', leadCls, lead);
+    var s = sub != null && sub !== '' ? el('div', subCls, sub) : null;
+    if (subFirst && s) { d.appendChild(s); d.appendChild(l); }
+    else { d.appendChild(l); if (s) d.appendChild(s); }
+    return d;
+  }
+  function head(title, action) {
+    var h = el('div', 'head');
+    h.appendChild(el('h3', null, title));
+    if (action) h.appendChild(cmdBtn(action));
+    return h;
+  }
+  function bpSearch(placeholder, onInput) {
+    var bar = el('div', 'searchbar blueprint');
+    ['tl', 'tr', 'bl', 'br'].forEach(function (c) { bar.appendChild(el('i', 'corner ' + c)); });
+    var sv = icon(ICONS.search, 18); sv.style.opacity = '.55';
+    bar.appendChild(sv);
+    var input = el('input'); input.placeholder = placeholder;
+    var n = el('span', 'n');
+    input.addEventListener('input', function () { onInput(input.value, n); });
+    bar.appendChild(input); bar.appendChild(n);
+    return { bar: bar, counter: n };
+  }
 
-  var main = $('main'); main.textContent = '';
+  /* ---------- screens ---------- */
+  var screens = [
+    { key: 'parts', label: 'Parts' },
+    { key: 'boms', label: 'BOMs' },
+    { key: 'cart', label: 'Cart', badge: (DATA.cart || []).length || '' },
+    { key: 'rfqs', label: 'RFQs', badge: (DATA.rfqs || []).length || '' },
+    { key: 'orders', label: 'Orders' },
+    { key: 'vendors', label: 'Vendors', badge: (DATA.vendors || []).length || '' }
+  ];
 
-  /* Parts — the library: every item */
-  var sp = screenShell('parts', 'Parts');
-  var t = table(['Part', 'Last price', 'Project', 'Status'], false);
-  allItems.forEach(function (it) {
-    var tr = h('tr');
-    var td1 = h('td');
-    var flex = h('div'); flex.style.cssText = 'display:flex;gap:14px;align-items:center';
-    var pc = h('div', 'partchip'); pc.appendChild(icon(ICONS.parts, 19, 'var(--color-accent)', '1.2'));
-    flex.appendChild(pc); flex.appendChild(nameCell(it, 'lead17'));
-    td1.appendChild(flex); tr.appendChild(td1);
-    var p = unitPrice(it);
-    var td2 = h('td');
-    td2.appendChild(stack(p == null ? '—' : money(p), 'lead17', it.vendor || 'Never purchased', 'sub12'));
-    if (p == null) td2.firstChild.firstChild.style.color = 'var(--muted)';
-    tr.appendChild(td2);
-    tr.appendChild(h('td', null, it._proj || '—'));
-    var td4 = h('td');
-    var lab = { researching: ['Researching', 'soft'], rfq: ['Out for quote', 'soft'], po_placed: ['Ordered', 'outline'], delivered: ['Received', 'solid'] }[it.status] || ['Researching', 'soft'];
-    td4.appendChild(chip(lab[0], lab[1]));
-    tr.appendChild(td4);
-    t.tbody.appendChild(tr);
-  });
-  sp.pad.appendChild(t.wrap);
-  if (!allItems.length) sp.pad.appendChild(h('div', 'empty', 'No parts yet.'));
-  main.appendChild(sp.s);
+  function renderParts(root) {
+    var s = el('section', 'screen', null); s.dataset.screen = 'parts';
+    s.appendChild(head(H('partsTitle', 'Parts'), DATA.actions && DATA.actions.newPart));
+    var rowsEls = [];
+    var search = bpSearch('Search parts', function (q, counter) {
+      q = q.trim().toLowerCase();
+      var n = 0;
+      rowsEls.forEach(function (r) {
+        var hit = !q || r.text.indexOf(q) > -1;
+        r.tr.style.display = hit ? '' : 'none';
+        if (hit) n++;
+      });
+      counter.textContent = n + (n === 1 ? ' match' : ' matches');
+      emptyMsg.style.display = n === 0 ? '' : 'none';
+      if (q) emptyMsg.textContent = 'No parts match “' + q + '”.';
+    });
+    s.appendChild(search.bar);
+    var pad = el('div', 'pad');
+    var t = table(H('parts', ['Part', 'Last price', 'Linked BOMs', 'Actions']), true);
+    (DATA.parts || []).forEach(function (p) {
+      var tr = el('tr');
+      var td1 = el('td');
+      var flex = el('div'); flex.style.cssText = 'display:flex;gap:14px;align-items:center';
+      var pc = el('div', 'partchip'); pc.appendChild(icon(ICONS.parts, 19, 'var(--color-accent)'));
+      pc.firstChild.setAttribute('stroke-width', '1.2');
+      flex.appendChild(pc);
+      flex.appendChild(stack(p.name, 'lead17', p.sub, 'sub115', true));
+      td1.appendChild(flex); tr.appendChild(td1);
+      var td2 = el('td');
+      td2.appendChild(stack(p.price != null ? money(p.price) : '—', 'lead17', p.priceSub || '', 'sub12'));
+      if (p.price == null) td2.firstChild.firstChild.style.color = 'var(--muted)';
+      tr.appendChild(td2);
+      var td3 = el('td');
+      (p.boms || []).forEach(function (b) { td3.appendChild(el('div', null, b)).style.fontSize = '13.5px'; });
+      if (!(p.boms || []).length) td3.appendChild(el('span', 'sub', '—'));
+      tr.appendChild(td3);
+      tr.appendChild(actionCell(p.actions));
+      t.tbody.appendChild(tr);
+      rowsEls.push({ tr: tr, text: (p.name + ' ' + (p.sub || '') + ' ' + (p.boms || []).join(' ')).toLowerCase() });
+    });
+    pad.appendChild(t.wrap);
+    var emptyMsg = el('div', 'empty', 'No parts yet. Ask me to add one.');
+    emptyMsg.style.display = (DATA.parts || []).length ? 'none' : '';
+    pad.appendChild(emptyMsg);
+    search.counter.textContent = rowsEls.length + (rowsEls.length === 1 ? ' match' : ' matches');
+    s.appendChild(pad);
+    root.appendChild(s);
+  }
 
-  /* BOMs — one row per project */
-  var sb = screenShell('boms', 'BOMs');
-  t = table(['BOM', 'Parts', 'Committed', 'Status']);
-  projects.forEach(function (p) {
-    var items = p.items || [];
-    var open = items.filter(function (i) { return i.status !== 'delivered'; }).length;
-    var committed = 0;
-    items.forEach(function (it) { var x = rowTotal(it); if ((it.status === 'po_placed' || it.status === 'delivered') && x != null) committed += x; });
-    var tr = h('tr');
-    var td1 = h('td'); td1.appendChild(stack(p.name, 'lead19', items.length + ' part' + (items.length === 1 ? '' : 's') + (open ? ' · ' + open + ' open' : ''), 'sub')); tr.appendChild(td1);
-    tr.appendChild(h('td', null, String(items.length)));
-    var td3 = h('td'); td3.appendChild(h('span', 'money', money(committed))); tr.appendChild(td3);
-    var td4 = h('td'); td4.appendChild(open ? chip('In progress', 'soft') : chip('Complete', 'solid')); tr.appendChild(td4);
-    t.tbody.appendChild(tr);
-  });
-  sb.pad.appendChild(t.wrap);
-  if (!projects.length) sb.pad.appendChild(h('div', 'empty', 'No projects yet.'));
-  main.appendChild(sb.s);
+  function renderBoms(root) {
+    var s = el('section', 'screen'); s.dataset.screen = 'boms';
+    s.appendChild(head(H('bomsTitle', 'BOMs'), DATA.actions && DATA.actions.newBom));
+    var pad = el('div', 'pad');
+    var t = table(H('boms', ['BOM', '# of units', 'Est. build cost', 'Status']));
+    (DATA.boms || []).forEach(function (b) {
+      var tr = el('tr');
+      var td1 = el('td'); td1.appendChild(stack(b.name, 'lead19', b.sub, 'sub')); tr.appendChild(td1);
+      tr.appendChild(el('td', null, b.units != null ? String(b.units) : '—'));
+      var td3 = el('td'); td3.appendChild(el('span', 'money18', b.cost != null ? money(b.cost) : '—')); tr.appendChild(td3);
+      var td4 = el('td'); td4.appendChild(chip(b.status, b.statusVariant)); tr.appendChild(td4);
+      t.tbody.appendChild(tr);
+    });
+    pad.appendChild(t.wrap);
+    if (!(DATA.boms || []).length) pad.appendChild(el('div', 'empty', 'No BOMs yet. Ask me to set one up.'));
+    s.appendChild(pad);
+    root.appendChild(s);
+  }
 
-  /* Cart — researching: picked, not yet ordered */
-  var sc = screenShell('cart', 'Cart');
-  t = table(['Part', 'Vendor', 'Qty', 'Per unit', 'Line total', ''], true);
-  var lines = 0, units = 0, total = 0;
-  researching.forEach(function (it) {
-    var tr = h('tr');
-    var td1 = h('td'); td1.appendChild(nameCell(it)); tr.appendChild(td1);
-    tr.appendChild(h('td', null, it.vendor || '—'));
-    tr.appendChild(h('td', null, String(it.qty || 1)));
-    var p = unitPrice(it);
-    tr.appendChild(h('td', null, p == null ? '—' : money(p)));
-    var td5 = h('td'); td5.appendChild(h('span', 'money', p == null ? '—' : money(rowTotal(it)))); tr.appendChild(td5);
-    tr.appendChild(actionCell([actBtn(it, 'Mark as purchased', 'po_placed', true)]));
-    t.tbody.appendChild(tr);
-    lines++; units += it.qty || 1; total += rowTotal(it) || 0;
-  });
-  sc.pad.appendChild(t.wrap);
-  if (!lines) sc.pad.appendChild(h('div', 'empty', 'Nothing picked to buy right now. Parts you’re still researching land here.'));
-  var foot = h('div', 'kick'); foot.style.marginTop = '16px';
-  foot.appendChild(h('span', null, lines + ' lines · ' + units + ' units'));
-  foot.appendChild(h('span', 'rule'));
-  foot.appendChild(h('span', null, money(total)));
-  sc.pad.appendChild(foot);
-  main.appendChild(sc.s);
+  function renderCart(root) {
+    var s = el('section', 'screen'); s.dataset.screen = 'cart';
+    s.appendChild(head(H('cartTitle', 'Cart') + (DATA.cartName ? ' · ' + DATA.cartName : '')));
+    var pad = el('div', 'pad');
+    var t = table(H('cart', ['Part', 'Supplier', 'Qty', 'Per unit', 'Line total', '']), true);
+    var lines = 0, units = 0, total = 0;
+    (DATA.cart || []).forEach(function (l) {
+      var tr = el('tr');
+      var td1 = el('td'); td1.appendChild(stack(l.name, 'lead16', l.sub, 'sub115', true)); tr.appendChild(td1);
+      tr.appendChild(el('td', null, l.supplier || '—'));
+      tr.appendChild(el('td', null, String(l.qty)));
+      tr.appendChild(el('td', null, l.per != null ? money(l.per) : '—'));
+      var td5 = el('td');
+      td5.appendChild(el('span', 'money', l.per != null ? money(l.qty * l.per) : '—'));
+      tr.appendChild(td5);
+      tr.appendChild(actionCell(l.actions));
+      t.tbody.appendChild(tr);
+      lines++; units += l.qty || 0; total += l.per != null ? l.qty * l.per : 0;
+    });
+    pad.appendChild(t.wrap);
+    if (!lines) pad.appendChild(el('div', 'empty', 'This cart is empty. Add parts from the Parts screen or a BOM.'));
+    var foot = el('div', 'kick');
+    foot.style.marginTop = '16px';
+    foot.appendChild(el('span', null, lines + ' lines · ' + units + ' units'));
+    foot.appendChild(el('span', 'rule'));
+    foot.appendChild(el('span', null, money(total)));
+    pad.appendChild(foot);
+    s.appendChild(pad);
+    root.appendChild(s);
+  }
 
-  /* RFQs — out for quote */
-  var sr = screenShell('rfqs', 'RFQs');
-  t = table(['Part', 'Vendor', 'Qty', 'Status', ''], true);
-  rfq.forEach(function (it) {
-    var tr = h('tr');
-    var td1 = h('td'); td1.appendChild(nameCell(it)); tr.appendChild(td1);
-    tr.appendChild(h('td', null, it.vendor || '—'));
-    tr.appendChild(h('td', null, String(it.qty || 1)));
-    var td4 = h('td'); td4.appendChild(chip('Sent', 'soft')); tr.appendChild(td4);
-    tr.appendChild(actionCell([actBtn(it, 'Mark ordered', 'po_placed', false)]));
-    t.tbody.appendChild(tr);
-  });
-  sr.pad.appendChild(t.wrap);
-  if (!rfq.length) sr.pad.appendChild(h('div', 'empty', 'Nothing out for quote right now.'));
-  main.appendChild(sr.s);
+  function renderRfqs(root) {
+    var s = el('section', 'screen'); s.dataset.screen = 'rfqs';
+    s.appendChild(head(H('rfqsTitle', 'RFQs')));
+    var pad = el('div', 'pad');
+    var t = table(H('rfqs', ['RFQ', 'Part', 'Qty', 'Status', '']), true);
+    (DATA.rfqs || []).forEach(function (r) {
+      var tr = el('tr');
+      var td1 = el('td'); td1.appendChild(stack(r.id, 'lead19', r.sub, 'sub')); tr.appendChild(td1);
+      var td2 = el('td'); td2.appendChild(stack(r.part, 'lead16', r.mfr, 'sub115', true)); tr.appendChild(td2);
+      tr.appendChild(el('td', null, r.qty != null ? String(r.qty) : '—'));
+      var td4 = el('td'); td4.appendChild(chip(r.status, r.statusVariant)); tr.appendChild(td4);
+      tr.appendChild(actionCell(r.actions));
+      t.tbody.appendChild(tr);
+    });
+    pad.appendChild(t.wrap);
+    if (!(DATA.rfqs || []).length) pad.appendChild(el('div', 'empty', 'Nothing out for quote right now.'));
+    s.appendChild(pad);
+    root.appendChild(s);
+  }
 
-  /* Orders — waiting + delivered */
-  var so = screenShell('orders', 'Orders');
-  so.pad.style.cssText = 'padding:20px 32px 28px;display:flex;flex-direction:column;gap:24px';
-  var sec1 = h('div');
-  sec1.appendChild(h('div', 'h5kick', 'Waiting to be delivered'));
-  t = table(['Part', 'Vendor', 'Qty', 'Total', 'ETA', 'Status', ''], true);
-  ordered.forEach(function (it) {
-    var tr = h('tr');
-    var td1 = h('td'); td1.appendChild(nameCell(it, 'lead17')); tr.appendChild(td1);
-    tr.appendChild(h('td', null, it.vendor || '—'));
-    tr.appendChild(h('td', null, String(it.qty || 1)));
-    var tot = rowTotal(it);
-    tr.appendChild(h('td', null, tot == null ? '—' : money(tot)));
-    tr.appendChild(h('td', null, fmtDate(it.eta) || '—'));
-    var td6 = h('td'); statusBits(td6, it); tr.appendChild(td6);
-    tr.appendChild(actionCell([actBtn(it, 'Mark delivered', 'delivered', true)]));
-    t.tbody.appendChild(tr);
-  });
-  sec1.appendChild(t.wrap);
-  if (!ordered.length) sec1.appendChild(h('div', 'empty', 'Nothing on order right now.'));
-  so.pad.appendChild(sec1);
-  var sec2 = h('div');
-  sec2.appendChild(h('div', 'h5kick', 'Delivered'));
-  t = table(['Part', 'Vendor', 'Qty', 'Total', 'Received']);
-  delivered.forEach(function (it) {
-    var tr = h('tr');
-    var td1 = h('td'); td1.appendChild(nameCell(it, 'lead17')); tr.appendChild(td1);
-    tr.appendChild(h('td', null, it.vendor || '—'));
-    tr.appendChild(h('td', null, String(it.qty || 1)));
-    var tot = rowTotal(it);
-    tr.appendChild(h('td', null, tot == null ? '—' : money(tot)));
-    tr.appendChild(h('td', null, fmtDate(it.ordered_at) || '—'));
-    t.tbody.appendChild(tr);
-  });
-  sec2.appendChild(t.wrap);
-  if (!delivered.length) sec2.appendChild(h('div', 'empty', 'Nothing received yet.'));
-  so.pad.appendChild(sec2);
-  main.appendChild(so.s);
+  function renderOrders(root) {
+    var s = el('section', 'screen'); s.dataset.screen = 'orders';
+    s.appendChild(head(H('ordersTitle', 'Orders')));
+    var pad = el('div', 'pad');
+    pad.style.display = 'flex'; pad.style.flexDirection = 'column'; pad.style.gap = '24px';
+    var sec1 = el('div');
+    sec1.appendChild(el('div', 'h5kick', 'Waiting to be delivered'));
+    var t1 = table(H('openOrders', ['Order', 'Supplier', 'Parts', 'Total', 'Expected', 'Status', '']), true);
+    (DATA.openOrders || []).forEach(function (o) {
+      var tr = el('tr');
+      var td1 = el('td'); td1.appendChild(stack(o.id, 'lead17', o.placed, 'sub12')); tr.appendChild(td1);
+      tr.appendChild(el('td', null, o.supplier || '—'));
+      tr.appendChild(el('td', null, String(o.parts)));
+      tr.appendChild(el('td', null, o.total != null ? money(o.total) : '—'));
+      tr.appendChild(el('td', null, o.expected || '—'));
+      var td6 = el('td');
+      td6.appendChild(chip(o.status, o.statusVariant || (o.status === 'Shipped' ? 'soft' : 'outline')));
+      if (o.stale) {
+        td6.appendChild(el('span', 'stale-dot'));
+        td6.appendChild(el('span', 'sub12', 'silent 7+ days'));
+      }
+      if (o.issue) {
+        td6.appendChild(el('span', 'issue-dot'));
+        td6.appendChild(el('span', 'sub12', o.issue === true ? 'problem' : o.issue));
+      }
+      tr.appendChild(td6);
+      tr.appendChild(actionCell(o.actions));
+      t1.tbody.appendChild(tr);
+    });
+    sec1.appendChild(t1.wrap);
+    if (!(DATA.openOrders || []).length) sec1.appendChild(el('div', 'empty', 'Nothing on order right now.'));
+    pad.appendChild(sec1);
+    var sec2 = el('div');
+    sec2.appendChild(el('div', 'h5kick', 'Delivered'));
+    var t2 = table(H('doneOrders', ['Order', 'Supplier', 'Parts', 'Total', 'Delivered']));
+    (DATA.doneOrders || []).forEach(function (o) {
+      var tr = el('tr');
+      var td1 = el('td'); td1.appendChild(el('span', 'lead17', o.id)); tr.appendChild(td1);
+      tr.appendChild(el('td', null, o.supplier || '—'));
+      tr.appendChild(el('td', null, String(o.parts)));
+      tr.appendChild(el('td', null, o.total != null ? money(o.total) : '—'));
+      tr.appendChild(el('td', null, o.delivered || '—'));
+      t2.tbody.appendChild(tr);
+    });
+    sec2.appendChild(t2.wrap);
+    if (!(DATA.doneOrders || []).length) sec2.appendChild(el('div', 'empty', 'Nothing received yet.'));
+    pad.appendChild(sec2);
+    s.appendChild(pad);
+    root.appendChild(s);
+  }
 
-  /* Vendors — the CRM table */
-  var sv = screenShell('vendors', 'Vendors');
-  t = table(['Vendor', 'Parts bought', 'Open', 'Last activity']);
-  vendors.forEach(function (v) {
-    var tr = h('tr');
-    var td1 = h('td');
-    td1.appendChild(h('div', 'vn', v.name));
-    if (v.domains && v.domains.length) td1.appendChild(h('div', 'sub115', v.domains.join(' · ')));
-    tr.appendChild(td1);
-    tr.appendChild(h('td', null, String(v.part_count != null ? v.part_count : '—')));
-    tr.appendChild(h('td', null, String(v.open_items != null ? v.open_items : '—')));
-    tr.appendChild(h('td', null, fmtDate(v.last_activity) || '—'));
-    t.tbody.appendChild(tr);
-  });
-  sv.pad.appendChild(t.wrap);
-  if (!vendors.length) sv.pad.appendChild(h('div', 'empty', 'No vendors yet.'));
-  main.appendChild(sv.s);
+  function renderVendors(root) {
+    var s = el('section', 'screen'); s.dataset.screen = 'vendors';
+    var head0 = el('div', 'head'); head0.appendChild(el('h3', null, H('vendorsTitle', 'Vendors'))); s.appendChild(head0);
+    var pad = el('div', 'pad');
+    var t = table(H('vendors', ['Vendor', 'Parts bought', 'Open', 'Last activity']));
+    (DATA.vendors || []).forEach(function (v) {
+      var tr = el('tr');
+      var td1 = el('td');
+      td1.appendChild(el('div', 'lead17', v.name));
+      if (v.sub) td1.appendChild(el('div', 'sub115', v.sub));
+      tr.appendChild(td1);
+      tr.appendChild(el('td', null, v.partCount != null ? String(v.partCount) : '—'));
+      tr.appendChild(el('td', null, v.openItems != null ? String(v.openItems) : '—'));
+      tr.appendChild(el('td', null, v.lastActivity || '—'));
+      t.tbody.appendChild(tr);
+    });
+    pad.appendChild(t.wrap);
+    if (!(DATA.vendors || []).length) pad.appendChild(el('div', 'empty', 'No vendors yet.'));
+    s.appendChild(pad);
+    root.appendChild(s);
+  }
 
-  /* nav (rebuilt each render so badges stay current) */
-  var counts = { cart: researching.length, rfqs: rfq.length, orders: ordered.length, vendors: vendors.length };
-  var nav = $('nav'); nav.textContent = '';
-  SCREENS.forEach(function (scr) {
-    var b = h('button', 'nav-it');
-    b.appendChild(icon(ICONS[scr.key], 15));
-    b.appendChild(document.createTextNode(scr.label));
-    if (counts[scr.key]) b.appendChild(h('span', 'badge', String(counts[scr.key])));
-    b.dataset.screen = scr.key;
-    b.addEventListener('click', function () { go(scr.key); });
+  /* ---------- boot ---------- */
+  var main = document.getElementById('main');
+  renderParts(main); renderBoms(main); renderCart(main); renderRfqs(main); renderOrders(main); renderVendors(main);
+
+  var nav = document.getElementById('nav');
+  screens.forEach(function (sc) {
+    var b = el('button', 'nav-it');
+    b.appendChild(icon(ICONS[sc.key], 15));
+    b.appendChild(document.createTextNode(sc.label));
+    if (sc.badge) b.appendChild(el('span', 'badge', String(sc.badge)));
+    b.addEventListener('click', function () { go(sc.key); });
+    b.dataset.screen = sc.key;
     nav.appendChild(b);
   });
-  go(activeScreen);
-}
-
-function go(key) {
-  activeScreen = key;
-  Array.prototype.forEach.call(document.querySelectorAll('.screen'), function (s) {
-    s.classList.toggle('on', s.dataset.screen === key);
-  });
-  Array.prototype.forEach.call(document.querySelectorAll('.nav-it'), function (b) {
-    b.classList.toggle('on', b.dataset.screen === key);
-  });
-}
-
-/* ---------- boot (identical bridge conventions to the previous live page) ---------- */
-function onWatch(ev) {
-  if (ev.type === 'data') {
-    var res = ev.result || {};
-    var payload = res.payload;
-    if (typeof payload === 'string') { try { payload = JSON.parse(payload); } catch (e) { payload = null; } }
-    if (payload && typeof payload === 'object') {
-      render(payload);
-      var when = (res.cache && res.cache.storedAt) || Date.now();
-      $('asof').textContent = 'as of ' + fmtTime(when);
-      setConn('live', 'live · ' + server);
-      $('stale').textContent = '';
-    }
-    return;
+  function go(key) {
+    Array.prototype.forEach.call(document.querySelectorAll('.screen'), function (s) {
+      s.classList.toggle('on', s.dataset.screen === key);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.nav-it'), function (b) {
+      b.classList.toggle('on', b.dataset.screen === key);
+    });
   }
-  var err = ev.error || {};
-  if (FIX[err.code]) {
-    var f = FIX[err.code](err.server || server);
-    lastGood = null;
-    setConn('err', 'disconnected');
-    showState(f[0], f[1], f[2]);
-    return;
-  }
-  if (lastGood) {
-    setConn('err', 'connection hiccup');
-    $('stale').textContent = 'Live refresh failing (' + (err.code || 'unknown') + '); showing the last good data.';
-  } else {
-    showState('Can’t reach your BOM', 'The connector isn’t answering right now.', '(' + (err.code || 'unknown') + ') Reload to try again.');
-  }
-}
-
-function boot() {
-  if (!window.claude || !window.claude.mcp) {
-    showState('Open on claude.ai', 'This dashboard reads your BOM live through your claude.ai connector. Open the artifact from its claude.ai link to see your data.', 'Static preview — no connector bridge in this context.');
-    return;
-  }
-  window.claude.mcp.listTools().then(function (r) {
-    var pick = (r.servers || []).filter(function (s) {
-      return s.server === 'Lora' && s.tools && s.tools.some(function (t) { return t.name === DASH; });
-    })[0];
-    if (!pick) {
-      var f = FIX.server_not_connected('Lora');
-      showState(f[0], f[1], f[2]);
-      return;
-    }
-    server = pick.server;
-    showState('Connecting', 'Loading ' + server + '…', '');
-    unsub = window.claude.mcp.watchTool(server, DASH, {}, onWatch, { cache: { staleTime: 30000 }, refetchInterval: 60000 });
-  }).catch(function (err) {
-    var f = FIX[err && err.code] ? FIX[err.code](err.server || '') : null;
-    if (f) showState(f[0], f[1], f[2]);
-    else showState('Can’t list connectors', '(' + ((err && err.code) || 'unknown') + ') ' + ((err && err.message) || ''), 'Reload to try again.');
-  });
-}
-boot();
+  go(DATA.startScreen || 'parts');
+  document.getElementById('asof').textContent = DATA.asOf ? 'Data as of ' + DATA.asOf : '';
 })();
 </script>
 </body>
