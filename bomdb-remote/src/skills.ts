@@ -4,7 +4,7 @@
 // revision even with a cache-buster). The GitHub contents API serves the
 // current commit; raw.githubusercontent is only the fallback.
 
-export const SKILL_NAMES = ['vendor-sweep', 'part-search', 'gmail-orders', 'bom-dashboard'];
+export const SKILL_NAMES = ['vendor-sweep', 'part-search', 'gmail-orders', 'bom-dashboard', 'dashboard-upgrade'];
 
 const REPO_API = 'https://api.github.com/repos/billenewman4/procurement-pack/contents/skills';
 const RAW = 'https://raw.githubusercontent.com/billenewman4/procurement-pack/main/skills';
@@ -35,6 +35,8 @@ const STUB_DESCRIPTIONS: Record<string, string> = {
     'Use when checking email for purchase/order updates — order confirmations, shipping notices, delivery notices, backorders — or when the user asks "what\'s the status of my orders", "did everything ship", or wants the BOM/order tracker reconciled with their inbox.',
   'bom-dashboard':
     'Use when the user asks to see their BOM, project status, dashboard, spending, order pipeline, vendors, or "show me where everything is" — renders their procurement data from the BOM database.',
+  'dashboard-upgrade':
+    'Use in Claude Code when the user pastes the deluxe-dashboard line or asks for the live / clickable / bookmarkable BOM dashboard — publishes their personal live dashboard page (real write-back buttons) through their Lora connector.',
 };
 
 export function getSkillStub(name: string): string {

@@ -52,7 +52,10 @@ claude.ai or Cowork — so if you live in chat, use the connector card above
   on the right line items — in-chat on demand, or unattended via the
   morning digest scheduled task.
 - **Dashboards on demand.** "Show me my BOM" renders a consistent artifact:
-  spend, pipeline, stalls, issues.
+  spend, pipeline, stalls, issues. Plus an optional deluxe version: one
+  paste in Claude Code (the desktop app's Code tab, or claude.ai/code)
+  publishes a bookmarkable live page with real buttons — onboarding offers
+  it at the end.
 - **Deep sourcing (when enabled).** "Get me real quotes for X" dispatches a
   sourcing agent over live vendor catalogs; priced, in-stock options come
   back in minutes, ready to add to the BOM.

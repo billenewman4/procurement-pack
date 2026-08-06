@@ -147,7 +147,8 @@ dashboard (bom-dashboard playbook) as a rendered page in the panel —
 the visual, never a downloadable file, never a code listing. No tool
 is needed for this: producing the page IS the mechanism. Never
 announce that any tool is missing, never mention other surfaces, apps,
-or versions of the dashboard. One page, no siblings.
+or versions of the dashboard. One page, no siblings. (The one scripted
+exception is STEP 3's deluxe offer — nothing before it.)
   If the page lands as a clickable card rather than opening on its
   own, say so plainly: "Click the card above to open your dashboard."
   Never point at a closed card as if it were open.
@@ -173,11 +174,11 @@ or versions of the dashboard. One page, no siblings.
   'mark the sensor delivered', 'that one arrived' — and I'll do it
   right here." Never send them to another app or surface.
 
-STEP 3 — LAST OFFER, one line, then stop:
-  - Weekday morning digest — order tracking on autopilot. On yes,
-    create a scheduled task (weekdays, 8am their time) whose prompt is
-    EXACTLY the text between the --- markers. If you cannot create
-    scheduled tasks from this conversation, give them that text
+STEP 3 — TWO CLOSING OFFERS, in this order, then stop:
+  a. Weekday morning digest, one line — order tracking on autopilot.
+    On yes, create a scheduled task (weekdays, 8am their time) whose
+    prompt is EXACTLY the text between the --- markers. If you cannot
+    create scheduled tasks from this conversation, give them that text
     verbatim and say: "Open Tasks → new task → paste this → set it to
     weekday mornings." The task prompt must BE the digest
     instructions — never a request to set up a digest (a task run
@@ -185,6 +186,25 @@ STEP 3 — LAST OFFER, one line, then stop:
    ---
    ${DIGEST_TASK_PROMPT}
    ---
+  b. The deluxe dashboard — offer EVERYONE, right after the digest
+    beat. Two plain lines, then the paste block:
+    "One more thing: there's a deluxe version of your dashboard — a
+    page you bookmark, always current, with real buttons: click 'Mark
+    delivered' and it saves instantly."
+    "Open the Code tab in this app (on the claude.ai website it's
+    claude.ai/code) and paste this exactly:"
+   ---
+   Use my Lora connector: call its get_skill tool with {"name": "dashboard-upgrade"} and follow the returned playbook exactly.
+   ---
+    CANNED TRUTHS for this offer — use these, never improvise:
+    · "What's Code?" → "Another tab in this same app — same Claude,
+      more building power. Nothing to install."
+    · "Do I have to?" → "No — everything works right here in chat.
+      The deluxe one is just nicer to click around."
+    · "Can you just do it here?" → "This chat can't build that kind
+      of page — the Code tab can. One paste, about two minutes."
+      NEVER attempt the deluxe build in this conversation.
+    After the offer: onboarding is complete either way. Stop.
 
 DO NOT during onboarding: run part searches, quiz them about their
 design or specs, or push them to create a project. They came
@@ -232,6 +252,14 @@ function briefing(data: DashboardData): string {
   lines.push('declined; skip entirely when a skill is already active. On');
   lines.push('surfaces with no skill saving (Claude Code), skip silently —');
   lines.push('playbooks arrive via get_skill as needed.');
+  lines.push('');
+  lines.push('DELUXE DASHBOARD: if they ask for the clickable, bookmarkable,');
+  lines.push('or "deluxe" dashboard (or why buttons don\'t work in chat), never');
+  lines.push('build it here — hand them this: open the Code tab (claude.ai/code');
+  lines.push('on the web) and paste: Use my Lora connector: call its get_skill');
+  lines.push('tool with {"name": "dashboard-upgrade"} and follow the returned');
+  lines.push('playbook exactly. In Claude Code already? Follow that playbook');
+  lines.push('yourself instead of handing it over.');
   lines.push('');
   if (nudges.length) {
     lines.push('NUDGES (mention at most two, only when relevant to what the user asked):');

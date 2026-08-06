@@ -51,8 +51,12 @@ test('new user gets the linear onboarding flow', async () => {
   // step 2: Cowork-only — rendered page in the panel, chat is the button
   assert.match(text, /rendered page in the panel/);
   assert.match(text, /the chat IS the button/);
-  assert.doesNotMatch(text, /claude\.ai\/code/);
   assert.match(text, /never mention other surfaces, apps/);
+  // Code appears ONLY in step 3's scripted deluxe offer, never earlier
+  const step3 = text.indexOf('STEP 3');
+  assert.ok(step3 > 0, 'has a step 3');
+  assert.doesNotMatch(text.slice(0, step3), /claude\.ai\/code/);
+  assert.match(text.slice(step3), /claude\.ai\/code/);
   // skills must never travel by URL; the dashboard HTML via shell curl is fine
   assert.doesNotMatch(text, /raw\.githubusercontent\S*skills/);
   assert.match(text, /github\.com\/billenewman4\/procurement-pack/);
@@ -80,6 +84,15 @@ test('new user gets the linear onboarding flow', async () => {
   assert.match(text, /show me my BOM/);
   assert.match(text, /scheduled task/i);
   assert.match(text, /record_order_event/);
+  // step 3b: deluxe dashboard offered to everyone, via the Code paste line
+  assert.match(text, /TWO CLOSING OFFERS/);
+  assert.match(text, /offer EVERYONE/);
+  assert.match(text, /"dashboard-upgrade"/);
+  assert.match(text, /NEVER attempt the deluxe build in this conversation/);
+  assert.match(text, /everything works right here in chat/);
+  assert.ok(
+    text.indexOf('morning digest') < text.indexOf('deluxe version of your dashboard'),
+    'digest offer comes before the deluxe offer');
   // explicitly absent: design/spec interview, part search, project pressure
   assert.doesNotMatch(text, /interview/i);
   assert.doesNotMatch(text, /upsert_spec/);
@@ -108,6 +121,10 @@ test('returning user gets a briefing, not the welcome script', async () => {
   assert.match(text, /Digi-Key/);
   // missing spec categories are nudged
   assert.match(text, /constraints/i);
+  // deluxe-dashboard routing survives for returning users
+  assert.match(text, /DELUXE DASHBOARD/);
+  assert.match(text, /"dashboard-upgrade"/);
+  assert.match(text, /never/);
 });
 
 test('swept user (vendors + one-offs, no projects) is returning, not new', async () => {
