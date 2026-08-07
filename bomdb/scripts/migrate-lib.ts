@@ -178,6 +178,9 @@ export async function migrate(engine: Engine): Promise<void> {
     await engine.query(`GRANT SELECT ON users TO ${pg_role}`);
     await engine.query(
       `GRANT SELECT, INSERT, UPDATE ON projects, project_specs, line_items, order_events, line_item_options, vendors TO ${pg_role}`);
+    // chat_sessions additionally gets DELETE: users own their transcripts
+    // outright and may clear them; RLS keeps it to their own rows.
+    await engine.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON chat_sessions TO ${pg_role}`);
   }
   console.log(`grants refreshed for ${roles.length} role(s): ${roles.map(r => r.pg_role).join(', ')}`);
 

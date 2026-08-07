@@ -627,6 +627,74 @@ export const operations: Operation[] = [
       return { project_id: project.id, line_items_imported: (bom.line_items ?? []).length };
     },
   },
+  // ---- Copilot chat sessions: shared transcripts for the UI + async agents ----
+  {
+    name: 'list_chat_sessions',
+    description: 'List the user\'s copilot chat sessions (newest first): id, title, timestamps, message count, and a preview of the last message. Transcripts live in get_chat_session.',
+    params: {},
+    handler: (engine) => engine.query(
+      `SELECT id, title, created_at, updated_at, meta,
+              (SELECT count(*)::int FROM jsonb_array_elements(items) x
+               WHERE x->>'kind' = 'msg') AS count,
+              (SELECT left(t.x->>'text', 140)
+               FROM jsonb_array_elements(items) WITH ORDINALITY AS t(x, ord)
+               WHERE t.x->>'kind' = 'msg'
+               ORDER BY t.ord DESC LIMIT 1) AS preview
+       FROM chat_sessions
+       ORDER BY updated_at DESC
+       LIMIT 200`),
+  },
+  {
+    name: 'get_chat_session',
+    description: 'Fetch one chat session in full, including its items transcript and meta.',
+    params: { session_id: { type: 'string', description: 'Session uuid', required: true } },
+    handler: async (engine, p) => {
+      const rows = await engine.query(
+        `SELECT * FROM chat_sessions WHERE id = $1`, [p.session_id]);
+      return rows[0] ?? { error: 'no such session' };
+    },
+  },
+  {
+    name: 'save_chat_session',
+    description: 'Create or update a chat session. items replaces the whole transcript; append adds entries to the end without replacing (how async agents post progress into a session); meta keys shallow-merge. Returns the saved row (without items).',
+    params: {
+      session_id: { type: 'string', description: 'Session uuid; omit to create a new session' },
+      title: { type: 'string', description: 'Session title (kept if omitted)' },
+      items: { type: 'array', description: 'Full transcript replacement: [{kind:"msg"|"tool"|"error", role?, text}]', items: { type: 'object' } },
+      append: { type: 'array', description: 'Entries appended to the existing transcript', items: { type: 'object' } },
+      meta: { type: 'object', description: 'Keys shallow-merged into meta (e.g. job ids, live-session URLs)' },
+    },
+    handler: async (engine, p) => {
+      const items = Array.isArray(p.items) ? JSON.stringify(p.items) : null;
+      const append = Array.isArray(p.append) ? JSON.stringify(p.append) : null;
+      const meta = p.meta && typeof p.meta === 'object' ? JSON.stringify(p.meta) : null;
+      const rows = await engine.query(
+        `INSERT INTO chat_sessions (id, user_id, title, items, meta)
+         VALUES (COALESCE($1::uuid, gen_random_uuid()),
+                 (SELECT id FROM users WHERE pg_role = current_user),
+                 COALESCE($2, 'New chat'),
+                 COALESCE($3::jsonb, '[]'::jsonb) || COALESCE($4::jsonb, '[]'::jsonb),
+                 COALESCE($5::jsonb, '{}'::jsonb))
+         ON CONFLICT (id) DO UPDATE SET
+           title = COALESCE($2, chat_sessions.title),
+           items = COALESCE($3::jsonb, chat_sessions.items) || COALESCE($4::jsonb, '[]'::jsonb),
+           meta = chat_sessions.meta || COALESCE($5::jsonb, '{}'::jsonb),
+           updated_at = now()
+         RETURNING id, title, created_at, updated_at, meta`,
+        [p.session_id ?? null, p.title ?? null, items, append, meta]);
+      return rows[0];
+    },
+  },
+  {
+    name: 'delete_chat_session',
+    description: 'Delete a chat session and its transcript.',
+    params: { session_id: { type: 'string', description: 'Session uuid', required: true } },
+    handler: async (engine, p) => {
+      const rows = await engine.query(
+        `DELETE FROM chat_sessions WHERE id = $1 RETURNING id`, [p.session_id]);
+      return rows[0] ? { deleted: rows[0].id } : { error: 'no such session' };
+    },
+  },
 ];
 
 /** Columns whose driver representation isn't clean JSON. PGLite/postgres hand

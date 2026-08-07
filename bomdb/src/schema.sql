@@ -102,6 +102,21 @@ CREATE TABLE IF NOT EXISTS app_accounts (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Copilot chat sessions (2026-08-07): one row per agent conversation, shared
+-- between the ProcurePro UI, the copilot, and async agents (sourcing,
+-- concierge) so all of them see and extend the same history. items is the
+-- ordered transcript [{kind:'msg'|'tool'|'error', role?, text}, ...]; meta is
+-- agent scratch space (job ids, browser-session URLs) shallow-merged on save.
+CREATE TABLE IF NOT EXISTS chat_sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id),
+  title text NOT NULL DEFAULT 'New chat',
+  items jsonb NOT NULL DEFAULT '[]',
+  meta jsonb NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS order_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   line_item_id uuid REFERENCES line_items(id) ON DELETE SET NULL,
@@ -131,6 +146,7 @@ ALTER TABLE project_specs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE line_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE line_item_options ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
 -- app_accounts: RLS on, NO policies — scoped roles (who also hold no grant)
 -- can never read password hashes; only the owner/master connection can.
 ALTER TABLE app_accounts ENABLE ROW LEVEL SECURITY;
@@ -184,5 +200,10 @@ DROP POLICY IF EXISTS line_item_options_own ON line_item_options;
 CREATE POLICY line_item_options_own ON line_item_options FOR ALL
   USING (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user))
   WITH CHECK (project_id IN (SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.pg_role = current_user));
+
+DROP POLICY IF EXISTS chat_sessions_own ON chat_sessions;
+CREATE POLICY chat_sessions_own ON chat_sessions FOR ALL
+  USING (user_id IN (SELECT id FROM users WHERE pg_role = current_user))
+  WITH CHECK (user_id IN (SELECT id FROM users WHERE pg_role = current_user));
 
 DROP FUNCTION IF EXISTS current_app_user_id();
