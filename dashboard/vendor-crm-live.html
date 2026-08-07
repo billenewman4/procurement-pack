@@ -213,6 +213,23 @@ a { color: var(--color-accent); text-underline-offset: 3px; }
 .table tbody tr:hover { background: color-mix(in srgb, var(--color-accent) 6%, transparent); }
 .table .r { text-align: right; }
 
+/* quote/option comparison tiles under a Cart or RFQ row */
+.optrow:hover { background: transparent !important; }
+.optrow td { padding: 0 8px 16px; border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent); }
+.opts { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 12px;
+  border-top: 1px dashed color-mix(in srgb, var(--color-text) 14%, transparent); }
+.opt { border: 1px solid var(--color-divider); padding: 10px 12px; min-width: 190px; max-width: 260px;
+  display: flex; flex-direction: column; gap: 4px; background: color-mix(in srgb, var(--color-surface) 45%, transparent); }
+.opt.sel { border-color: var(--color-accent); box-shadow: inset 0 0 0 1px var(--color-accent); }
+.opt .ov { font-weight: 600; font-size: 14px; display: flex; align-items: baseline; gap: 8px; justify-content: space-between; }
+.opt .opn { font-size: 11.5px; color: var(--muted-60); letter-spacing: .02em; }
+.opt .oprice { font-family: var(--font-heading); font-size: 15px; white-space: nowrap; }
+.opt .oavail { font-size: 12px; color: var(--muted-60); }
+.opt .ofit { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.opt .oact { margin-top: 4px; }
+.opt .oact .btn { font-size: 12.5px; padding: 4px 10px; }
+.optlabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-60); padding-top: 12px; }
+
 .shell { display: grid; grid-template-columns: 198px 1fr; min-height: 100vh; }
 aside { border-right: 1px solid var(--color-divider); padding: 18px 14px;
   display: flex; flex-direction: column; gap: 22px;
@@ -416,6 +433,52 @@ function actionCell(buttons) {
   td.appendChild(wrap);
   return td;
 }
+/* quote/option comparison: one tile per stored option, Choose commits it */
+function chooseBtn(opt, it) {
+  var b = h('button', 'btn btn-secondary', 'Choose');
+  b.addEventListener('click', function () {
+    b.disabled = true; b.textContent = 'Saving…';
+    window.claude.mcp.callTool(server, 'select_option', { option_id: opt.id, project_id: it.project_id }).then(function () {
+      return window.claude.mcp.invalidate(server, DASH).catch(function () {});
+    }).then(function () {
+      b.textContent = 'Chosen';
+    }).catch(function (err) {
+      b.disabled = false; b.textContent = 'Choose';
+      var e = b.parentNode.appendChild(h('div', 'rowerr', (err && err.message) || 'Couldn’t save the pick.'));
+      setTimeout(function () { if (e.parentNode) e.parentNode.removeChild(e); }, 8000);
+    });
+  });
+  return b;
+}
+function optionsRow(it, colspan, label) {
+  var opts = (it.options || []).filter(function (o) { return o.status !== 'rejected'; });
+  if (!opts.length) return null;
+  var tr = h('tr', 'optrow');
+  var td = h('td'); td.colSpan = colspan;
+  td.appendChild(h('div', 'optlabel', label + ' (' + opts.length + ')'));
+  var wrap = h('div', 'opts');
+  opts.forEach(function (o) {
+    var tile = h('div', 'opt' + (o.status === 'selected' ? ' sel' : ''));
+    var top = h('div', 'ov');
+    top.appendChild(h('span', null, o.vendor || '—'));
+    top.appendChild(h('span', 'oprice', o.unit_price != null ? money(o.unit_price) + ' ea' : 'not yet priced'));
+    tile.appendChild(top);
+    if (o.part_number) tile.appendChild(h('div', 'opn', o.part_number));
+    if (o.availability || o.moq) {
+      tile.appendChild(h('div', 'oavail',
+        (o.availability || '') + (o.moq ? (o.availability ? ' · ' : '') + 'MOQ ' + o.moq : '')));
+    }
+    if (o.fit_notes) tile.appendChild(h('div', 'ofit', o.fit_notes));
+    var act = h('div', 'oact');
+    if (o.status === 'selected') act.appendChild(chip('Chosen', 'solid'));
+    else if (it.project_id) act.appendChild(chooseBtn(o, it));
+    tile.appendChild(act);
+    wrap.appendChild(tile);
+  });
+  td.appendChild(wrap);
+  tr.appendChild(td);
+  return tr;
+}
 function statusBits(td, it) {
   if (it.shipped) td.appendChild(chip('Shipped', 'soft'));
   else td.appendChild(chip('Ordered', 'outline'));
@@ -513,6 +576,8 @@ function render(d) {
     var td5 = h('td'); td5.appendChild(h('span', 'money', p == null ? '—' : money(rowTotal(it)))); tr.appendChild(td5);
     tr.appendChild(actionCell([actBtn(it, 'Mark as purchased', 'po_placed', true)]));
     t.tbody.appendChild(tr);
+    var copts = optionsRow(it, 6, 'Options found');
+    if (copts) t.tbody.appendChild(copts);
     lines++; units += it.qty || 1; total += rowTotal(it) || 0;
   });
   sc.pad.appendChild(t.wrap);
@@ -532,9 +597,12 @@ function render(d) {
     var td1 = h('td'); td1.appendChild(nameCell(it)); tr.appendChild(td1);
     tr.appendChild(h('td', null, it.vendor || '—'));
     tr.appendChild(h('td', null, String(it.qty || 1)));
-    var td4 = h('td'); td4.appendChild(chip('Sent', 'soft')); tr.appendChild(td4);
+    var quotes = (it.options || []).filter(function (o) { return o.status !== 'rejected'; });
+    var td4 = h('td'); td4.appendChild(chip(quotes.length ? quotes.length + ' quote' + (quotes.length === 1 ? '' : 's') + ' in' : 'Sent', 'soft')); tr.appendChild(td4);
     tr.appendChild(actionCell([actBtn(it, 'Mark ordered', 'po_placed', false)]));
     t.tbody.appendChild(tr);
+    var ropts = optionsRow(it, 5, 'Quotes returned');
+    if (ropts) t.tbody.appendChild(ropts);
   });
   sr.pad.appendChild(t.wrap);
   if (!rfq.length) sr.pad.appendChild(h('div', 'empty', 'Nothing out for quote right now.'));
