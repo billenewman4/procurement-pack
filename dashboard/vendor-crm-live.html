@@ -229,6 +229,8 @@ a { color: var(--color-accent); text-underline-offset: 3px; }
 .opt .oact { margin-top: 4px; }
 .opt .oact .btn { font-size: 12.5px; padding: 4px 10px; }
 .optlabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-60); padding-top: 12px; }
+.linkbtn { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; font-size: 13.5px;
+  color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
 
 .shell { display: grid; grid-template-columns: 198px 1fr; min-height: 100vh; }
 aside { border-right: 1px solid var(--color-divider); padding: 18px 14px;
@@ -433,6 +435,36 @@ function actionCell(buttons) {
   td.appendChild(wrap);
   return td;
 }
+/* rebuy: a delivered part becomes a NEW line (history stays); cart = ready to buy, rfq = out for quote */
+function rebuyBtn(it, label, toStatus, primary) {
+  var b = h('button', 'btn ' + (primary ? 'btn-primary' : 'btn-secondary'), label);
+  b.addEventListener('click', function () {
+    var old = b.textContent;
+    b.disabled = true; b.textContent = 'Saving…';
+    var args = { description: it.description, qty: 1, status: toStatus, notes: 'Reorder of previous purchase' };
+    if (it.project_id) args.project_id = it.project_id;
+    if (it.vendor) args.vendor = it.vendor;
+    if (it.part_number) args.part_number = it.part_number;
+    if (it.product_url) args.product_url = it.product_url;
+    if (it.unit_price != null && !isNaN(Number(it.unit_price))) args.unit_price = Number(it.unit_price);
+    window.claude.mcp.callTool(server, 'upsert_line_item', args).then(function () {
+      return window.claude.mcp.invalidate(server, DASH).catch(function () {});
+    }).then(function () {
+      b.textContent = toStatus === 'rfq' ? 'Quote started' : 'In cart';
+    }).catch(function (err) {
+      b.disabled = false; b.textContent = old;
+      var td = b.closest('td');
+      var e = td.appendChild(h('div', 'rowerr', (err && err.message) || 'Couldn’t save.'));
+      setTimeout(function () { if (e.parentNode) e.parentNode.removeChild(e); }, 8000);
+    });
+  });
+  return b;
+}
+function quoteLink() {
+  var a = h('button', 'linkbtn', 'View live quote →');
+  a.addEventListener('click', function () { go('rfqs'); });
+  return a;
+}
 /* quote/option comparison: one tile per stored option, Choose commits it */
 function chooseBtn(opt, it) {
   var b = h('button', 'btn btn-secondary', 'Choose');
@@ -519,7 +551,7 @@ function render(d) {
 
   /* Parts — the library: every item */
   var sp = screenShell('parts', 'Parts');
-  var t = table(['Part', 'Last price', 'Project', 'Status'], false);
+  var t = table(['Part', 'Last price', 'Project', 'Status', ''], true);
   allItems.forEach(function (it) {
     var tr = h('tr');
     var td1 = h('td');
@@ -534,9 +566,19 @@ function render(d) {
     tr.appendChild(td2);
     tr.appendChild(h('td', null, it._proj || '—'));
     var td4 = h('td');
-    var lab = { researching: ['Researching', 'soft'], rfq: ['Out for quote', 'soft'], po_placed: ['Ordered', 'outline'], delivered: ['Received', 'solid'] }[it.status] || ['Researching', 'soft'];
+    var lab = { researching: ['In cart', 'soft'], rfq: ['Out for quote', 'soft'], po_placed: ['Ordered', 'outline'], delivered: ['Received', 'solid'] }[it.status] || ['In cart', 'soft'];
     td4.appendChild(chip(lab[0], lab[1]));
     tr.appendChild(td4);
+    var acts = [];
+    if (it.status === 'delivered') {
+      acts.push(rebuyBtn(it, 'Add to cart', 'researching', true));
+      acts.push(rebuyBtn(it, 'Request quote', 'rfq', false));
+    } else if (it.status === 'researching') {
+      acts.push(actBtn(it, 'Request quote', 'rfq', false));
+    } else if (it.status === 'rfq') {
+      acts.push(quoteLink());
+    }
+    tr.appendChild(actionCell(acts));
     t.tbody.appendChild(tr);
   });
   sp.pad.appendChild(t.wrap);
@@ -581,7 +623,7 @@ function render(d) {
     lines++; units += it.qty || 1; total += rowTotal(it) || 0;
   });
   sc.pad.appendChild(t.wrap);
-  if (!lines) sc.pad.appendChild(h('div', 'empty', 'Nothing picked to buy right now. Parts you’re still researching land here.'));
+  if (!lines) sc.pad.appendChild(h('div', 'empty', 'Cart is empty. Add parts from the Parts screen, or pull one in from a finished quote.'));
   var foot = h('div', 'kick'); foot.style.marginTop = '16px';
   foot.appendChild(h('span', null, lines + ' lines · ' + units + ' units'));
   foot.appendChild(h('span', 'rule'));
