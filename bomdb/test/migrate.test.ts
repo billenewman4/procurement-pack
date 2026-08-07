@@ -136,16 +136,26 @@ before(async () => {
 });
 after(async () => { await engine.close(); });
 
-test('legacy statuses remap per the design-doc table', async () => {
+test('legacy statuses remap per the design-doc table (both generations)', async () => {
   const rows = await engine.query<{ id: string; status: string }>(`SELECT id, status FROM line_items`);
   const status = (key: string) => rows.find(r => r.id === ids[key])!.status;
-  assert.equal(status('needed'), 'researching');
-  assert.equal(status('ordered'), 'po_placed');
-  assert.equal(status('shipped_no_ev'), 'po_placed');
-  assert.equal(status('shipped_has_ev'), 'po_placed');
-  assert.equal(status('issue'), 'po_placed');
+  // pre-2026-08-04 vocab → four-state, then the 2026-08-06 rename lands on
+  // the final quoting/cart/ordered/delivered lifecycle.
+  assert.equal(status('needed'), 'cart');
+  assert.equal(status('ordered'), 'ordered');
+  assert.equal(status('shipped_no_ev'), 'ordered');
+  assert.equal(status('shipped_has_ev'), 'ordered');
+  assert.equal(status('issue'), 'ordered');
   assert.equal(status('delivered'), 'delivered');
-  assert.equal(status('researching'), 'researching');
+  assert.equal(status('researching'), 'cart');
+});
+
+test('the final status constraint accepts only the new vocab', async () => {
+  await assert.rejects(
+    engine.query(`UPDATE line_items SET status = 'researching' WHERE id = $1`, [ids.needed]),
+    /line_items_status_check/);
+  await engine.query(`UPDATE line_items SET status = 'quoting' WHERE id = $1`, [ids.needed]);
+  await engine.query(`UPDATE line_items SET status = 'cart' WHERE id = $1`, [ids.needed]);
 });
 
 test('compensating order_events exist exactly once', async () => {

@@ -154,7 +154,7 @@ explicitly ("best electrically / best practically") and let the user pick —
 that tradeoff is a recommendation, not a footnote.
 
 End with: **"Want me to add one of these to the BOM?"** — on yes, write the
-`line_items` record (status `researching` or `ordered`) to the store (MCP if
+`line_items` record (status `cart` or `ordered`) to the store (MCP if
 connected, else the local `bom.json`).
 
 ## Common mistakes

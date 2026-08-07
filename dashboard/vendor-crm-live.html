@@ -435,7 +435,7 @@ function actionCell(buttons) {
   td.appendChild(wrap);
   return td;
 }
-/* rebuy: a delivered part becomes a NEW line (history stays); cart = ready to buy, rfq = out for quote */
+/* rebuy: a delivered part becomes a NEW line (history stays); cart = ready to buy, quoting = out for quotes */
 function rebuyBtn(it, label, toStatus, primary) {
   var b = h('button', 'btn ' + (primary ? 'btn-primary' : 'btn-secondary'), label);
   b.addEventListener('click', function () {
@@ -450,7 +450,7 @@ function rebuyBtn(it, label, toStatus, primary) {
     window.claude.mcp.callTool(server, 'upsert_line_item', args).then(function () {
       return window.claude.mcp.invalidate(server, DASH).catch(function () {});
     }).then(function () {
-      b.textContent = toStatus === 'rfq' ? 'Quote started' : 'In cart';
+      b.textContent = toStatus === 'quoting' ? 'Quote started' : 'In cart';
     }).catch(function (err) {
       b.disabled = false; b.textContent = old;
       var td = b.closest('td');
@@ -529,12 +529,15 @@ function screenShell(key, title) {
   return { s: s, pad: pad, head: head };
 }
 
+var LEGACY_STATUS = { researching: 'cart', rfq: 'quoting', po_placed: 'ordered' };
 function render(d) {
   lastGood = d;
   var projects = d.projects || [], oneOffs = d.one_offs || [], vendors = d.vendors || [];
   var allItems = [];
   projects.forEach(function (p) { (p.items || []).forEach(function (it) { it._proj = p.name; allItems.push(it); }); });
   oneOffs.forEach(function (it) { it._proj = null; allItems.push(it); });
+  // tolerate pre-rename payloads (server not yet migrated)
+  allItems.forEach(function (it) { if (LEGACY_STATUS[it.status]) it.status = LEGACY_STATUS[it.status]; });
 
   if (!allItems.length && !vendors.length) {
     showState('Nothing here yet', 'Your workspace is empty. Say “set up Lora” in a Claude chat to build your vendor CRM from your email.', '');
@@ -542,9 +545,9 @@ function render(d) {
   }
   showApp();
 
-  var researching = allItems.filter(function (it) { return it.status === 'researching'; });
-  var rfq = allItems.filter(function (it) { return it.status === 'rfq'; });
-  var ordered = allItems.filter(function (it) { return it.status === 'po_placed'; });
+  var inCart = allItems.filter(function (it) { return it.status === 'cart'; });
+  var quoting = allItems.filter(function (it) { return it.status === 'quoting'; });
+  var ordered = allItems.filter(function (it) { return it.status === 'ordered'; });
   var delivered = allItems.filter(function (it) { return it.status === 'delivered'; });
 
   var main = $('main'); main.textContent = '';
@@ -566,16 +569,16 @@ function render(d) {
     tr.appendChild(td2);
     tr.appendChild(h('td', null, it._proj || '—'));
     var td4 = h('td');
-    var lab = { researching: ['In cart', 'soft'], rfq: ['Out for quote', 'soft'], po_placed: ['Ordered', 'outline'], delivered: ['Received', 'solid'] }[it.status] || ['In cart', 'soft'];
+    var lab = { cart: ['In cart', 'soft'], quoting: ['Out for quote', 'soft'], ordered: ['Ordered', 'outline'], delivered: ['Received', 'solid'] }[it.status] || ['In cart', 'soft'];
     td4.appendChild(chip(lab[0], lab[1]));
     tr.appendChild(td4);
     var acts = [];
     if (it.status === 'delivered') {
-      acts.push(rebuyBtn(it, 'Add to cart', 'researching', true));
-      acts.push(rebuyBtn(it, 'Request quote', 'rfq', false));
-    } else if (it.status === 'researching') {
-      acts.push(actBtn(it, 'Request quote', 'rfq', false));
-    } else if (it.status === 'rfq') {
+      acts.push(rebuyBtn(it, 'Add to cart', 'cart', true));
+      acts.push(rebuyBtn(it, 'Request quote', 'quoting', false));
+    } else if (it.status === 'cart') {
+      acts.push(actBtn(it, 'Request quote', 'quoting', false));
+    } else if (it.status === 'quoting') {
       acts.push(quoteLink());
     }
     tr.appendChild(actionCell(acts));
@@ -592,7 +595,7 @@ function render(d) {
     var items = p.items || [];
     var open = items.filter(function (i) { return i.status !== 'delivered'; }).length;
     var committed = 0;
-    items.forEach(function (it) { var x = rowTotal(it); if ((it.status === 'po_placed' || it.status === 'delivered') && x != null) committed += x; });
+    items.forEach(function (it) { var x = rowTotal(it); if ((it.status === 'ordered' || it.status === 'delivered') && x != null) committed += x; });
     var tr = h('tr');
     var td1 = h('td'); td1.appendChild(stack(p.name, 'lead19', items.length + ' part' + (items.length === 1 ? '' : 's') + (open ? ' · ' + open + ' open' : ''), 'sub')); tr.appendChild(td1);
     tr.appendChild(h('td', null, String(items.length)));
@@ -604,11 +607,11 @@ function render(d) {
   if (!projects.length) sb.pad.appendChild(h('div', 'empty', 'No projects yet.'));
   main.appendChild(sb.s);
 
-  /* Cart — researching: picked, not yet ordered */
+  /* Cart — ready to buy */
   var sc = screenShell('cart', 'Cart');
   t = table(['Part', 'Vendor', 'Qty', 'Per unit', 'Line total', ''], true);
   var lines = 0, units = 0, total = 0;
-  researching.forEach(function (it) {
+  inCart.forEach(function (it) {
     var tr = h('tr');
     var td1 = h('td'); td1.appendChild(nameCell(it)); tr.appendChild(td1);
     tr.appendChild(h('td', null, it.vendor || '—'));
@@ -616,7 +619,7 @@ function render(d) {
     var p = unitPrice(it);
     tr.appendChild(h('td', null, p == null ? '—' : money(p)));
     var td5 = h('td'); td5.appendChild(h('span', 'money', p == null ? '—' : money(rowTotal(it)))); tr.appendChild(td5);
-    tr.appendChild(actionCell([actBtn(it, 'Mark as purchased', 'po_placed', true)]));
+    tr.appendChild(actionCell([actBtn(it, 'Mark as purchased', 'ordered', true)]));
     t.tbody.appendChild(tr);
     var copts = optionsRow(it, 6, 'Options found');
     if (copts) t.tbody.appendChild(copts);
@@ -634,20 +637,20 @@ function render(d) {
   /* RFQs — out for quote */
   var sr = screenShell('rfqs', 'RFQs');
   t = table(['Part', 'Vendor', 'Qty', 'Status', ''], true);
-  rfq.forEach(function (it) {
+  quoting.forEach(function (it) {
     var tr = h('tr');
     var td1 = h('td'); td1.appendChild(nameCell(it)); tr.appendChild(td1);
     tr.appendChild(h('td', null, it.vendor || '—'));
     tr.appendChild(h('td', null, String(it.qty || 1)));
     var quotes = (it.options || []).filter(function (o) { return o.status !== 'rejected'; });
     var td4 = h('td'); td4.appendChild(chip(quotes.length ? quotes.length + ' quote' + (quotes.length === 1 ? '' : 's') + ' in' : 'Sent', 'soft')); tr.appendChild(td4);
-    tr.appendChild(actionCell([actBtn(it, 'Mark ordered', 'po_placed', false)]));
+    tr.appendChild(actionCell([actBtn(it, 'Mark ordered', 'ordered', false)]));
     t.tbody.appendChild(tr);
     var ropts = optionsRow(it, 5, 'Quotes returned');
     if (ropts) t.tbody.appendChild(ropts);
   });
   sr.pad.appendChild(t.wrap);
-  if (!rfq.length) sr.pad.appendChild(h('div', 'empty', 'Nothing out for quote right now.'));
+  if (!quoting.length) sr.pad.appendChild(h('div', 'empty', 'Nothing out for quote right now.'));
   main.appendChild(sr.s);
 
   /* Orders — waiting + delivered */
@@ -708,7 +711,7 @@ function render(d) {
   main.appendChild(sv.s);
 
   /* nav (rebuilt each render so badges stay current) */
-  var counts = { cart: researching.length, rfqs: rfq.length, orders: ordered.length, vendors: vendors.length };
+  var counts = { cart: inCart.length, rfqs: quoting.length, orders: ordered.length, vendors: vendors.length };
   var nav = $('nav'); nav.textContent = '';
   SCREENS.forEach(function (scr) {
     var b = h('button', 'nav-it');

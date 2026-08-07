@@ -15,7 +15,7 @@ before(async () => {
   const p = await runOp(seeded, 'create_project', { name: 'brief-test' }) as { id: string };
   await runOp(seeded, 'upsert_spec', { project_id: p.id, category: 'power', spec: '5V USB' });
   await runOp(seeded, 'upsert_line_item', {
-    project_id: p.id, description: 'sensor', qty: 1, unit_price: 12, status: 'po_placed',
+    project_id: p.id, description: 'sensor', qty: 1, unit_price: 12, status: 'ordered',
     vendor: 'Digi-Key',
   });
   // A swept user: vendor + one-off historical purchase, no projects.
@@ -102,7 +102,7 @@ test('new user gets the linear onboarding flow', async () => {
 
 test('digest prompt reflects the 4-status world', async () => {
   const text = await getStartedText(empty);
-  assert.match(text, /researching →\s+rfq → po_placed → delivered/);
+  assert.match(text, /quoting\/cart →\s+ordered → delivered/);
   assert.match(text, /EVENTS, not\s+statuses/);
   assert.match(text, /one-off/i);
   assert.match(text, /UPDATED/);
@@ -115,7 +115,7 @@ test('returning user gets a briefing, not the welcome script', async () => {
   const text = await getStartedText(seeded);
   assert.doesNotMatch(text, /NEW USER/);
   assert.match(text, /brief-test/);
-  assert.match(text, /po_placed/);
+  assert.match(text, /ordered/);
   // vendor CRM shows up in the briefing
   assert.match(text, /VENDORS \(1\)/);
   assert.match(text, /Digi-Key/);

@@ -1,5 +1,5 @@
 import type { Engine } from './engine.ts';
-import { isForwardMove, eventToStatus, normalizeStatus, LEGACY_STATUS_MAP, STATUSES } from './status.ts';
+import { isForwardMove, eventToStatus, normalizeStatus, STATUSES } from './status.ts';
 
 export interface ParamDef {
   type: 'string' | 'number' | 'boolean' | 'object' | 'array';
@@ -194,7 +194,7 @@ export const operations: Operation[] = [
   },
   {
     name: 'upsert_line_item',
-    description: 'Add a part to the BOM, or update it by id. Omit project_id for a one-off master-list part (e.g. swept purchase history) not tied to a project. Pass vendor_id for a known vendor, or a vendor NAME to auto-match/create one in the vendor CRM. New items default to status "researching". Status changes on existing items go through update_status, not here. Fill chosen_because with which specs the part satisfies.',
+    description: 'Add a part to the BOM, or update it by id. Omit project_id for a one-off master-list part (e.g. swept purchase history) not tied to a project. Pass vendor_id for a known vendor, or a vendor NAME to auto-match/create one in the vendor CRM. New items default to status "cart" (ready to buy); pass status "quoting" when it should go out for quotes first. Status changes on existing items go through update_status, not here. Fill chosen_because with which specs the part satisfies.',
     params: {
       id: { type: 'string', description: 'Omit to create' },
       project_id: { type: 'string', description: 'Omit for a one-off master-list part' },
@@ -253,11 +253,13 @@ export const operations: Operation[] = [
          VALUES ($1,
                  COALESCE((SELECT user_id FROM projects WHERE id = $1),
                           (SELECT id FROM users WHERE pg_role = current_user)),
-                 $2,$3,$4,$5,$6,COALESCE($7,1),$8,COALESCE($9,'researching'),
+                 $2,$3,$4,$5,$6,COALESCE($7,1),$8,COALESCE($9,'cart'),
                  COALESCE($10,'manual'),COALESCE($11,true),$12,$13,$14,$15)
          RETURNING *`,
         [p.project_id ?? null, p.description, p.part_number, vendorName, vendorId,
-         p.product_url, p.qty, p.unit_price, p.status, p.source, p.active,
+         p.product_url, p.qty, p.unit_price,
+         typeof p.status === 'string' ? normalizeStatus(p.status) : p.status,
+         p.source, p.active,
          p.ordered_at, p.eta, p.notes, p.chosen_because]);
       return rows[0];
     },
@@ -278,22 +280,21 @@ export const operations: Operation[] = [
   },
   {
     name: 'update_status',
-    description: 'Move a line item through its lifecycle: researching → rfq → po_placed → delivered. Shipping and issues are NOT statuses — record those with record_order_event; the dashboard derives shipped badges and open issues from events. Forward moves apply immediately. Backward moves are refused unless confirmed=true — ask the user before confirming.',
+    description: 'Move a line item through its lifecycle: quoting / cart → ordered → delivered. "cart" = ready to buy; "quoting" = out to suppliers for quotes — moving between quoting and cart is free in both directions. Shipping and issues are NOT statuses — record those with record_order_event; the dashboard derives shipped badges and open issues from events. Forward moves apply immediately. Backward moves (e.g. ordered → cart) are refused unless confirmed=true — ask the user before confirming.',
     params: {
       line_item_id: { type: 'string', required: true },
       status: { type: 'string', enum: STATUSES, required: true },
       confirmed: { type: 'boolean', description: 'Set true ONLY after the user explicitly approves a non-forward move' },
     },
     handler: async (engine, p) => {
-      const requested = p.status as string;
-      if (requested === 'shipped' || requested === 'issue') {
-        return { error: `"${requested}" is not a status — record it with record_order_event (event: "${requested}"); the item stays "po_placed" and the dashboard derives shipped/issue state from order events` };
+      if (p.status === 'shipped' || p.status === 'issue') {
+        return { error: `"${p.status}" is not a status — record it with record_order_event (event: "${p.status}"); the item stays "ordered" and the dashboard derives shipped/issue state from order events` };
       }
+      // Old vocab (researching/rfq/po_placed) from cached skills or stale
+      // chats normalizes silently rather than erroring.
+      const requested = normalizeStatus(p.status as string);
       if (!(STATUSES as readonly string[]).includes(requested)) {
-        const renamed = LEGACY_STATUS_MAP[requested];
-        return { error: renamed
-          ? `"${requested}" was renamed — use "${renamed}" (statuses are now: ${STATUSES.join(', ')})`
-          : `unknown status "${requested}" — one of: ${STATUSES.join(', ')}` };
+        return { error: `unknown status "${p.status}" — one of: ${STATUSES.join(', ')}` };
       }
       const [current] = await engine.query<{ status: string }>(
         `SELECT status FROM line_items WHERE id = $1`, [p.line_item_id]);
@@ -303,7 +304,7 @@ export const operations: Operation[] = [
       }
       const rows = await engine.query(
         `UPDATE line_items SET status = $2,
-           ordered_at = CASE WHEN $2 = 'po_placed' AND ordered_at IS NULL THEN now() ELSE ordered_at END
+           ordered_at = CASE WHEN $2 = 'ordered' AND ordered_at IS NULL THEN now() ELSE ordered_at END
          WHERE id = $1 RETURNING *`, [p.line_item_id, requested]);
       return rows[0];
     },
@@ -325,7 +326,7 @@ export const operations: Operation[] = [
   },
   {
     name: 'record_order_event',
-    description: 'Append an order lifecycle event from an email (gmail-orders emits these). This is the ONLY home of shipped/issue — they are events, not statuses. Auto-advances the matched line item when the event implies a forward move (confirmed/shipped → po_placed, delivered → delivered); never moves backward — anomalies come back flagged for the user. Unmatched events (no line_item_id) are kept for manual reconciliation and require project_id. For an event on a one-off master-list item, omit project_id and pass its line_item_id.',
+    description: 'Append an order lifecycle event from an email (gmail-orders emits these). This is the ONLY home of shipped/issue — they are events, not statuses. Auto-advances the matched line item when the event implies a forward move (confirmed/shipped → ordered, delivered → delivered); never moves backward — anomalies come back flagged for the user. Unmatched events (no line_item_id) are kept for manual reconciliation and require project_id. For an event on a one-off master-list item, omit project_id and pass its line_item_id.',
     params: {
       project_id: { type: 'string', description: 'Omit ONLY for an event on a one-off master-list item (line_item_id required then)' },
       line_item_id: { type: 'string', description: 'Omit if unmatched (unmatched events need project_id)' },
@@ -390,7 +391,7 @@ export const operations: Operation[] = [
   },
   {
     name: 'stale_orders',
-    description: 'Line items stuck in "po_placed" with no order event in the last N days (default 7) — candidates for a vendor nudge.',
+    description: 'Line items stuck in "ordered" with no order event in the last N days (default 7) — candidates for a vendor nudge.',
     params: {
       project_id: { type: 'string', description: 'Omit for all projects' },
       days: { type: 'number' },
@@ -399,7 +400,7 @@ export const operations: Operation[] = [
       `SELECT li.*, p.name AS project_name,
               (SELECT max(oe.event_at) FROM order_events oe WHERE oe.line_item_id = li.id) AS last_event_at
        FROM line_items li LEFT JOIN projects p ON p.id = li.project_id
-       WHERE li.status = 'po_placed' AND li.active
+       WHERE li.status = 'ordered' AND li.active
          AND ($1::uuid IS NULL OR li.project_id = $1)
          -- sentinel: no events and no ordered_at means we know nothing recent — always stale
          AND COALESCE(
@@ -488,7 +489,7 @@ export const operations: Operation[] = [
   },
   {
     name: 'get_dashboard_data',
-    description: 'Aggregated BOM dashboard data: per-project status buckets (Researching = researching+rfq, Ordered = po_placed with a shipped badge derived from order events, Delivered), committed spend, spec coverage, open issues (derived from unresolved issue events), stale ordered items, recent order events, plus the vendor CRM rollup and one-off master-list parts. Inactive items are excluded. Call this before rendering a BOM dashboard or status overview — and before rendering, call get_skill("bom-dashboard") on this connector and follow the returned playbook (skip only if the bom-dashboard skill is already active in this conversation).',
+    description: 'Aggregated BOM dashboard data: per-project status buckets (Quoting, Cart, Ordered — with a shipped badge derived from order events — and Delivered), committed spend, spec coverage, open issues (derived from unresolved issue events), stale ordered items, recent order events, plus the vendor CRM rollup and one-off master-list parts. Inactive items are excluded. Call this before rendering a BOM dashboard or status overview — and before rendering, call get_skill("bom-dashboard") on this connector and follow the returned playbook (skip only if the bom-dashboard skill is already active in this conversation).',
     params: { project_id: { type: 'string', description: 'Omit for all projects' } },
     handler: async (engine, p) => {
       const projects = await engine.query<{ id: string; name: string; created_at: string }>(
@@ -504,12 +505,12 @@ export const operations: Operation[] = [
            WHERE project_id = $1 AND active GROUP BY status`, [proj.id]);
         const [{ committed }] = await engine.query<{ committed: number }>(
           `SELECT COALESCE(sum(qty * unit_price), 0)::float AS committed
-           FROM line_items WHERE project_id = $1 AND active AND status IN ('po_placed','delivered')`, [proj.id]);
+           FROM line_items WHERE project_id = $1 AND active AND status IN ('ordered','delivered')`, [proj.id]);
         const stale = await engine.query(
           `SELECT li.id, li.description, li.vendor, li.ordered_at,
                   (SELECT max(oe.event_at) FROM order_events oe WHERE oe.line_item_id = li.id) AS last_event_at
            FROM line_items li
-           WHERE li.project_id = $1 AND li.status = 'po_placed' AND li.active
+           WHERE li.project_id = $1 AND li.status = 'ordered' AND li.active
              AND COALESCE(
                    (SELECT max(oe.event_at) FROM order_events oe WHERE oe.line_item_id = li.id),
                    li.ordered_at, now() - interval '100 years')
@@ -540,8 +541,9 @@ export const operations: Operation[] = [
           spec_categories: specs.map(s => s.category),
           status_counts: statusCounts,
           buckets: {
-            researching: (statusCounts.researching ?? 0) + (statusCounts.rfq ?? 0),
-            ordered: statusCounts.po_placed ?? 0,
+            quoting: statusCounts.quoting ?? 0,
+            cart: statusCounts.cart ?? 0,
+            ordered: statusCounts.ordered ?? 0,
             delivered: statusCounts.delivered ?? 0,
           },
           total_committed: Number(committed),
@@ -605,7 +607,7 @@ export const operations: Operation[] = [
       for (const li of bom.line_items ?? []) {
         const [row] = await engine.query<{ id: string }>(
           `INSERT INTO line_items (project_id, description, part_number, vendor, product_url, qty, unit_price, status, source, active, ordered_at, eta, notes, chosen_because, outcome, outcome_notes)
-           VALUES ($1,$2,$3,$4,$5,COALESCE($6,1),$7,COALESCE($8,'researching'),COALESCE($9,'manual'),COALESCE($10,true),$11,$12,$13,$14,$15,$16) RETURNING id`,
+           VALUES ($1,$2,$3,$4,$5,COALESCE($6,1),$7,COALESCE($8,'cart'),COALESCE($9,'manual'),COALESCE($10,true),$11,$12,$13,$14,$15,$16) RETURNING id`,
           [project.id, li.description, li.part_number ?? null, li.vendor ?? null,
            li.product_url ?? null, li.qty ?? null, li.unit_price ?? null,
            typeof li.status === 'string' ? normalizeStatus(li.status) : null,

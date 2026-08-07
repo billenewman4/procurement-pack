@@ -1,36 +1,44 @@
-export const STATUSES = ['researching', 'rfq', 'po_placed', 'delivered'] as const;
+export const STATUSES = ['quoting', 'cart', 'ordered', 'delivered'] as const;
 export type Status = (typeof STATUSES)[number];
 
-const FORWARD_ORDER: readonly string[] = ['researching', 'rfq', 'po_placed', 'delivered'];
+// quoting and cart are BOTH pre-order stages (cart = ready to buy; quoting =
+// out to suppliers), so moving between them is routine in either direction —
+// they share a rank. Only rank regressions (ordered → cart, delivered →
+// anything) count as backward moves needing user confirmation.
+const RANK: Record<string, number> = { quoting: 0, cart: 0, ordered: 1, delivered: 2 };
 
-/** True only for a strictly-forward move along the lifecycle. */
+/** True for any move that doesn't regress the lifecycle (quoting ↔ cart is
+ *  free; same-status is not a move). */
 export function isForwardMove(from: string, to: string): boolean {
-  const a = FORWARD_ORDER.indexOf(from);
-  const b = FORWARD_ORDER.indexOf(to);
-  return a >= 0 && b >= 0 && b > a;
+  return from !== to && RANK[from] !== undefined && RANK[to] !== undefined
+    && RANK[to] >= RANK[from];
 }
 
 /** Map an order_events.event to the line-item status it implies, or null if
  *  it must never auto-apply (backordered/issue → flag, don't move). Shipping
- *  is an event, not a status: a shipped email implies the PO is placed, and
- *  the dashboard derives the shipped badge from the event itself. */
+ *  is an event, not a status: a shipped email implies the order is placed,
+ *  and the dashboard derives the shipped badge from the event itself. */
 export function eventToStatus(event: string): Status | null {
   switch (event) {
-    case 'confirmed': return 'po_placed';
-    case 'shipped': return 'po_placed';
+    case 'confirmed': return 'ordered';
+    case 'shipped': return 'ordered';
     case 'delivered': return 'delivered';
     default: return null;
   }
 }
 
-/** Pre-redesign statuses → the four-state lifecycle (2026-08-04 vendor-CRM
- *  redesign). shipped/issue now live in order_events; import_json and the
- *  migration remap them, new code never writes them. */
+/** Old status vocabularies → the current lifecycle. Two generations:
+ *  pre-2026-08-04 (needed/shipped/issue) and the 2026-08-06 rename
+ *  (researching→cart, rfq→quoting, po_placed→ordered). import_json and the
+ *  migration remap stored rows; normalizeStatus keeps stale callers (cached
+ *  skills, old chats) writing valid values. */
 export const LEGACY_STATUS_MAP: Record<string, Status> = {
-  needed: 'researching',
-  ordered: 'po_placed',
-  shipped: 'po_placed',
-  issue: 'po_placed',
+  needed: 'cart',
+  researching: 'cart',
+  rfq: 'quoting',
+  po_placed: 'ordered',
+  shipped: 'ordered',
+  issue: 'ordered',
 };
 
 /** Accept old bom.json / pre-migration status values without breaking. */

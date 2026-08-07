@@ -95,9 +95,12 @@ export async function migrate(engine: Engine): Promise<void> {
        END
        WHERE status IN ('needed','ordered','shipped','issue')
        RETURNING id`);
+    // Transitional superset: rows may already hold the 2026-08-06 names on a
+    // rerun; step 2b below replaces this with the strict final constraint.
     await engine.query(
       `ALTER TABLE line_items ADD CONSTRAINT line_items_status_check
-       CHECK (status IN ('researching','rfq','po_placed','delivered'))`);
+       CHECK (status IN ('researching','rfq','po_placed','delivered',
+                         'quoting','cart','ordered'))`);
     // order_events.user_id backfill runs AFTER the compensating inserts so
     // they get an owner scope too.
     await engine.query(
@@ -105,6 +108,24 @@ export async function migrate(engine: Engine): Promise<void> {
        FROM projects p
        WHERE p.id = oe.project_id AND oe.user_id IS NULL AND p.user_id IS NOT NULL`);
     console.log(`statuses remapped: ${remapped.length} item(s), ${shipped.length} shipped event(s), ${issues.length} issue event(s) inserted`);
+
+    // ---- 2b. 2026-08-06 lifecycle rename: researching→cart, rfq→quoting,
+    // po_placed→ordered. Cart is the ready-to-buy stage; quoting sits beside
+    // it (out to suppliers). Pure rename — no compensating events needed.
+    const renamed = await engine.query(
+      `UPDATE line_items SET status = CASE status
+         WHEN 'researching' THEN 'cart'
+         WHEN 'rfq'         THEN 'quoting'
+         WHEN 'po_placed'   THEN 'ordered'
+       END
+       WHERE status IN ('researching','rfq','po_placed')
+       RETURNING id`);
+    await engine.query(`ALTER TABLE line_items DROP CONSTRAINT IF EXISTS line_items_status_check`);
+    await engine.query(
+      `ALTER TABLE line_items ADD CONSTRAINT line_items_status_check
+       CHECK (status IN ('quoting','cart','ordered','delivered'))`);
+    await engine.query(`ALTER TABLE line_items ALTER COLUMN status SET DEFAULT 'cart'`);
+    console.log(`lifecycle rename: ${renamed.length} item(s) moved to quoting/cart/ordered vocab`);
 
     // ---- 3. Vendors from legacy vendor text; vendor_id backfill ----
     const extracted = await engine.query(

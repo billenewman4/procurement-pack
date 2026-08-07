@@ -82,14 +82,14 @@ one-offs), source `email`, and the evidence quote in `notes`.
 
 Status must match what the email trail actually shows:
 - Arrived (or old enough that arrival is obvious): `delivered`.
-- Shipped / in transit / ETA in the future: `po_placed`, then
+- Shipped / in transit / ETA in the future: `ordered`, then
   `record_order_event` (event `shipped`, the item's line_item_id, no
   project_id, event_at from the email) so the dashboard shows it in
   Ordered with a shipped badge — never flatten an in-flight order to
   delivered.
-- Ordered but no shipping notice yet: `po_placed`.
+- Ordered but no shipping notice yet: `ordered`.
 - A quote with no purchase: vendor only — no line item unless the user
-  asks to track it (then status `rfq`).
+  asks to track it (then status `quoting`).
 
 ## Common mistakes
 

@@ -43,7 +43,7 @@ before(async () => {
   bobProject = await asRole('bob_r', async () => {
     const p = await runOp(engine, 'create_project', { name: 'bob-proj' }) as { id: string };
     const li = await runOp(engine, 'upsert_line_item', {
-      project_id: p.id, description: 'bob part', status: 'po_placed', vendor: 'BobVendorCo',
+      project_id: p.id, description: 'bob part', status: 'ordered', vendor: 'BobVendorCo',
     }) as { id: string };
     bobItem = li.id;
     return p.id;
@@ -111,7 +111,7 @@ test('cannot move another user\'s line item through update_status, set_outcome, 
   // and bob's item is untouched
   const [row] = await engine.query<{ status: string; outcome: string | null; active: boolean }>(
     `SELECT status, outcome, active FROM line_items WHERE id = $1`, [bobItem]);
-  assert.equal(row.status, 'po_placed');
+  assert.equal(row.status, 'ordered');
   assert.equal(row.outcome, null);
   assert.equal(row.active, true);
 });
@@ -158,7 +158,7 @@ test('one-off items (no project) stay scoped to their owner', async () => {
 test('one-off order events stay scoped to their owner', async () => {
   const oneOff = await asRole('bob_r', async () => {
     const li = await runOp(engine, 'upsert_line_item', {
-      description: 'bob one-off pump', status: 'po_placed',
+      description: 'bob one-off pump', status: 'ordered',
     }) as { id: string };
     const ev = await runOp(engine, 'record_order_event', {
       line_item_id: li.id, vendor: 'Amazon', event: 'shipped',

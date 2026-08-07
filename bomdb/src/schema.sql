@@ -57,8 +57,8 @@ CREATE TABLE IF NOT EXISTS line_items (
   qty int NOT NULL DEFAULT 1,
   unit_price numeric(10,2),
   active boolean NOT NULL DEFAULT true,       -- false = replaced/hidden, kept for history
-  status text NOT NULL DEFAULT 'researching'
-    CHECK (status IN ('researching','rfq','po_placed','delivered')),
+  status text NOT NULL DEFAULT 'cart'
+    CHECK (status IN ('quoting','cart','ordered','delivered')),
   source text NOT NULL DEFAULT 'manual'
     CHECK (source IN ('manual','search','email')),
   ordered_at timestamptz,

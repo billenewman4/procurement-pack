@@ -12,7 +12,7 @@ before(async () => {
   const p = await runOp(engine, 'create_project', { name: 'options-test' }) as { id: string };
   projectId = p.id;
   const li = await runOp(engine, 'upsert_line_item', {
-    project_id: projectId, description: 'CO2 sensor breakout', qty: 1, status: 'researching',
+    project_id: projectId, description: 'CO2 sensor breakout', qty: 1, status: 'cart',
   }) as { id: string };
   itemId = li.id;
 });

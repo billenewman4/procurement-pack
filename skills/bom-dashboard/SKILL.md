@@ -25,7 +25,7 @@ in a single call — don't also call `list_vendors`. Every number shown must
 come from this response. No projects and no vendors → don't render an empty
 dashboard; offer to set things up instead.
 
-**Then call `list_options` for each `researching`/`rfq` item.**
+**Then call `list_options` for each `cart`/`quoting` item.**
 `get_dashboard_data` silently drops `rejected` options; `list_options` returns
 all of them. The rejected ones are the record of what was weighed and why —
 fetch them. Don't call it for ordered or delivered items; those decisions are
@@ -35,7 +35,7 @@ settled.
 
 | Tab | Contents |
 |---|---|
-| **Active BOM** | One section per project. Inside each section, three status groups in order: Researching (`researching` + `rfq`), Ordered (`po_placed`), Delivered (`delivered`). After the last project, a **Purchase history** section holds `one_offs`, grouped the same way. |
+| **Active BOM** | One section per project. Inside each section, three status groups in order: To buy (`cart` + `quoting`), Ordered (`ordered`), Delivered (`delivered`). After the last project, a **Purchase history** section holds `one_offs`, grouped the same way. |
 | **Vendors** | The vendor CRM rollup table. Not a lifecycle stage — no swatch. |
 
 A group that would be empty isn't rendered. Tab count pills: Active BOM =
@@ -73,12 +73,12 @@ Text always in ink tokens, never a data color.
 
 Status ramp, one hue light→dark — validated, do not substitute:
 
-- Light: researching `#5598e7`, ordered `#2a78d6`, delivered `#104281`
-- Dark: researching `#6da7ec`, ordered `#3987e5`, delivered `#8fb4e2`
+- Light: cart `#5598e7`, ordered `#2a78d6`, delivered `#104281`
+- Dark: cart `#6da7ec`, ordered `#3987e5`, delivered `#8fb4e2`
 
 Every status use carries a text label (group heading, chip text) — the ramp
 steps are close by design and color is never the only signal. The light
-researching blue never sets text.
+cart blue never sets text.
 
 Critical red `#d03b3b` (dark `#e05d5d`) is reserved for open issues — the
 issue tile dot and the `issue` chip. Nowhere else, ever, including buttons.
@@ -97,7 +97,7 @@ timestamps, count pills — with `font-variant-numeric: tabular-nums`.
    Committed `$X.YZ` · In hand `n/total` · Open issues `n`.
    Big mono number, small uppercase muted label. The issue tile gets a small
    red dot beside the number when `n > 0`; the number stays in ink. Tiles
-   count ALL items — projects and one-offs alike: Committed = po_placed +
+   count ALL items — projects and one-offs alike: Committed = ordered +
    delivered spend, In hand = delivered / all.
 
 3. **Tab strip** — two labels with mono count pills. Active tab: ink text,
@@ -120,13 +120,13 @@ hairline-separated:
 - **Right**: mono `qty × $unit`; then badges — `shipped` chip when shipped,
   red-outlined `issue` chip when `open_issue`; then the row's action button.
 
-Researching rows additionally show their **options block** under the main
+Cart rows additionally show their **options block** under the main
 line, after a hairline rule: one small tile per option, wrapping. Each tile:
 vendor + part number (anchor), `$unit ea` + availability muted, one-line
-`fit_notes`. `selected` → border in the researching blue + `chosen` tag; none
+`fit_notes`. `selected` → border in the cart blue + `chosen` tag; none
 selected → tag the best fit `leading`; `rejected` → ~62% opacity + `ruled
 out` tag. Dimmed, not deleted — "what we didn't buy and why" is the whole
-argument for a database over a spreadsheet. An `rfq` item gets one
+argument for a database over a spreadsheet. A `quoting` item gets one
 placeholder tile — quote id, "not yet priced", and a plain note that
 Committed understates the build.
 
@@ -197,9 +197,9 @@ Buttons are recessive: hairline border, muted ink, no data colors.
 | Button | Where | Call |
 |---|---|---|
 | Choose | option tile | `select_option {option_id, project_id}` |
-| Mark ordered | researching row | `update_status {line_item_id, status:'po_placed'}` |
-| Source this part | researching row | clipboard — sourcing prompt (below) |
-| Remove | researching row | `set_item_active {line_item_id, active:false}` |
+| Mark ordered | cart row | `update_status {line_item_id, status:'ordered'}` |
+| Source this part | cart row | clipboard — sourcing prompt (below) |
+| Remove | cart row | `set_item_active {line_item_id, active:false}` |
 | Mark delivered | ordered row | `update_status {line_item_id, status:'delivered'}` |
 | Record issue | ordered row | `record_order_event` — reveal an inline one-line input first |
 
@@ -246,7 +246,7 @@ function copyPrompt(btn, text) {                    // writeText → execCommand
 }
 ```
 
-Prompt template (one per researching row, in the hidden `.prompt`):
+Prompt template (one per cart row, in the hidden `.prompt`):
 `Source this part: <description> (qty n) for project "<name>"
 (project_id <pid>, line_item_id <id>). Spec: <why line>. Use part-search and
 store the top 2–3 options with add_line_item_option.`
@@ -317,7 +317,7 @@ never two:
    you produced one you built from memory instead of this file.
 3. Action-button elements present in the HTML with the bridge adapter and
    graceful hiding — even if the current surface leaves them dormant.
-4. Statuses are researching/rfq/po_placed/delivered only; shipped and
+4. Statuses are quoting/cart/ordered/delivered only; shipped and
    issue appear as badges. `needed` or `shipped` as a status group means
    stale knowledge — rebuild from this file.
 5. No orange anywhere; red only on issue signals.

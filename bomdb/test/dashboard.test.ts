@@ -11,7 +11,7 @@ interface DashboardProject {
   name: string;
   spec_categories: string[];
   status_counts: Record<string, number>;
-  buckets: { researching: number; ordered: number; delivered: number };
+  buckets: { quoting: number; cart: number; ordered: number; delivered: number };
   total_committed: number;
   open_issues: number;
   stale_items: { description: string }[];
@@ -31,19 +31,19 @@ before(async () => {
   projectId = p.id;
   await runOp(engine, 'upsert_spec', { project_id: projectId, category: 'power', spec: '5V USB' });
   const sensor = await runOp(engine, 'upsert_line_item', {
-    project_id: projectId, description: 'sensor', qty: 2, unit_price: 10.5, status: 'po_placed',
+    project_id: projectId, description: 'sensor', qty: 2, unit_price: 10.5, status: 'ordered',
   }) as { id: string };
   await runOp(engine, 'upsert_line_item', {
-    project_id: projectId, description: 'enclosure', qty: 1, unit_price: 20, status: 'researching',
+    project_id: projectId, description: 'enclosure', qty: 1, unit_price: 20, status: 'cart',
   });
   await runOp(engine, 'upsert_line_item', {
-    project_id: projectId, description: 'gasket', qty: 1, unit_price: 2, status: 'rfq',
+    project_id: projectId, description: 'gasket', qty: 1, unit_price: 2, status: 'quoting',
   });
   const cable = await runOp(engine, 'upsert_line_item', {
-    project_id: projectId, description: 'bad cable', qty: 1, unit_price: 3, status: 'po_placed',
+    project_id: projectId, description: 'bad cable', qty: 1, unit_price: 3, status: 'ordered',
   }) as { id: string };
   const replaced = await runOp(engine, 'upsert_line_item', {
-    project_id: projectId, description: 'replaced regulator', qty: 1, unit_price: 99, status: 'po_placed',
+    project_id: projectId, description: 'replaced regulator', qty: 1, unit_price: 99, status: 'ordered',
   }) as { id: string };
   await runOp(engine, 'set_item_active', { line_item_id: replaced.id, active: false });
   const ev = await runOp(engine, 'record_order_event', {
@@ -70,18 +70,18 @@ test('get_dashboard_data aggregates one project correctly', async () => {
   assert.ok(proj, 'project missing from dashboard');
   assert.equal(proj.name, 'dash-test');
   assert.deepEqual(proj.spec_categories, ['power']);
-  assert.equal(proj.status_counts.po_placed, 2);
-  assert.equal(proj.status_counts.researching, 1);
-  assert.equal(proj.status_counts.rfq, 1);
-  // buckets: Researching = researching+rfq, Ordered = po_placed, Delivered
-  assert.deepEqual(proj.buckets, { researching: 2, ordered: 2, delivered: 0 });
-  // committed = po_placed+delivered ACTIVE items: 2 × 10.50 + 1 × 3 (the
+  assert.equal(proj.status_counts.ordered, 2);
+  assert.equal(proj.status_counts.cart, 1);
+  assert.equal(proj.status_counts.quoting, 1);
+  // buckets mirror the four statuses one-to-one
+  assert.deepEqual(proj.buckets, { quoting: 1, cart: 1, ordered: 2, delivered: 0 });
+  // committed = ordered+delivered ACTIVE items: 2 × 10.50 + 1 × 3 (the
   // inactive 99-dollar regulator must not count)
   assert.equal(proj.total_committed, 24);
   // open issue derived from the unresolved issue event on the cable
   assert.equal(proj.open_issues, 1);
   assert.equal(proj.recent_events.length, 2);
-  // the po_placed sensor has an order event from just now — not stale
+  // the ordered sensor has an order event from just now — not stale
   assert.equal(proj.stale_items.length, 0);
   // inactive items are excluded from the main view
   assert.ok(!proj.items.some(i => i.description === 'replaced regulator'));
@@ -114,7 +114,7 @@ test('an issue followed by a delivered event is resolved', async () => {
 
 test('one-off items receive events and derive shipped/open_issue', async () => {
   const oneOff = await runOp(engine, 'upsert_line_item', {
-    description: 'reordered pump (one-off)', vendor: 'McMaster-Carr', status: 'po_placed',
+    description: 'reordered pump (one-off)', vendor: 'McMaster-Carr', status: 'ordered',
   }) as { id: string };
   // no project_id: the event scopes through the one-off item itself
   const shipped = await runOp(engine, 'record_order_event', {
@@ -123,7 +123,7 @@ test('one-off items receive events and derive shipped/open_issue', async () => {
   }) as { error?: string; project_id: string | null; line_item_status: string };
   assert.equal(shipped.error, undefined, `one-off shipped event failed: ${shipped.error}`);
   assert.equal(shipped.project_id, null);
-  assert.equal(shipped.line_item_status, 'po_placed');
+  assert.equal(shipped.line_item_status, 'ordered');
   const issue = await runOp(engine, 'record_order_event', {
     line_item_id: oneOff.id, vendor: 'McMaster-Carr', event: 'issue',
     event_at: new Date().toISOString(), raw_summary: 'one-off reorder damaged',

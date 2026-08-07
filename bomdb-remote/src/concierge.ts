@@ -42,16 +42,17 @@ prompts.
    oddly-routed vendor emails only show up there. Read only
    sender/subject/snippet until an email is classified as an order event;
    discard everything else.
-2. Record each event with record_order_event. Statuses are researching →
-   rfq → po_placed → delivered; shipped and issue are EVENTS, not
-   statuses — the item stays po_placed and the tool auto-advances forward
+2. Record each event with record_order_event. Statuses are quoting/cart →
+   ordered → delivered (cart = ready to buy, quoting = out for quotes);
+   shipped and issue are EVENTS, not
+   statuses — the item stays ordered and the tool auto-advances forward
    moves itself, never backward. Cover project items AND one-off
    master-list items (one-offs take line_item_id with no project_id).
    Quote order numbers and prices exactly, never infer. Leave
    line_item_id off anything below certain confidence — unmatched events
    need a project_id and are kept for manual reconciliation.
 3. Report three short sections: UPDATED (item, old → new status, ETA),
-   UNMATCHED (events needing my call), STALE (po_placed 7+ days with no
+   UNMATCHED (events needing my call), STALE (ordered 7+ days with no
    event — use the stale_orders tool; worth a vendor nudge).
 4. If nothing moved, say so in one line and stop.`;
 
@@ -128,7 +129,7 @@ turn:
      no approval pause, no table-then-wait: upsert_vendor per vendor,
      then upsert_line_item per part (vendor name for auto-link, NO
      project_id, source 'email'; 'delivered' only if it actually
-     arrived, in-flight orders get 'po_placed' plus a shipped order
+     arrived, in-flight orders get 'ordered' plus a shipped order
      event). Physical goods ONLY — software/SaaS receipts, subscriptions
      and personal shopping never become vendors. Anything ambiguous
      stays OUT (mention it in one line; they can ask to see the list).
@@ -214,7 +215,7 @@ Afterward they can just talk: "I ordered the pump from McMaster",
 }
 
 function fmtCounts(counts: Record<string, number>): string {
-  const order = ['researching', 'rfq', 'po_placed', 'delivered'];
+  const order = ['quoting', 'cart', 'ordered', 'delivered'];
   const parts = order.filter(s => counts[s]).map(s => `${counts[s]} ${s}`);
   return parts.length ? parts.join(', ') : 'no line items yet';
 }

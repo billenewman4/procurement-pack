@@ -79,7 +79,7 @@ test('one-off line items need no project and default sensibly', async () => {
 test('list_vendors rolls up parts (incl. inactive), open items, last activity', async () => {
   const p = await runOp(engine, 'create_project', { name: 'rollup-test' }) as { id: string };
   const open = await runOp(engine, 'upsert_line_item', {
-    project_id: p.id, description: 'live part', vendor: 'RollupVendor', status: 'po_placed',
+    project_id: p.id, description: 'live part', vendor: 'RollupVendor', status: 'ordered',
   }) as { id: string };
   const hidden = await runOp(engine, 'upsert_line_item', {
     project_id: p.id, description: 'replaced part', vendor: 'RollupVendor', status: 'delivered',
