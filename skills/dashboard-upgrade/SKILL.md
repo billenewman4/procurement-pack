@@ -66,7 +66,7 @@ Publish the downloaded file with the Artifact tool:
 
 - title: **BOM Dashboard** · favicon: 🔩
 - capabilities: `{"mcp": {"servers": [{"server": "Lora",
-  "tools": ["get_dashboard_data", "update_status"]}]}}` — exactly ONE
+  "tools": ["get_dashboard_data", "update_status", "select_option"]}]}}` — exactly ONE
   server, never two. If your session's tool prefix segment differs from
   `Lora` (e.g. `claude_ai_BOM_Manager`), use that segment as the
   `server` value; it resolves to the display name at publish.
