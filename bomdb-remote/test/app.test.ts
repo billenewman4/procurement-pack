@@ -71,9 +71,10 @@ test('tools/list exposes real bomdb ops plus ping', async () => {
   for (const op of ['upsert_vendor', 'list_vendors', 'set_item_active', 'rename_project']) {
     assert.ok(names.includes(op), `missing ${op} in ${names}`);
   }
-  // no tool description still speaks the retired status names
+  // no tool description still speaks the retired status names ("ordered" is
+  // CURRENT vocab again since the 2026-08-06 po_placed→ordered rename)
   for (const t of msg.result.tools as { name: string; description: string }[]) {
-    assert.doesNotMatch(t.description, /"needed"|"ordered"|status "shipped"|status "issue"/,
+    assert.doesNotMatch(t.description, /"needed"|"po_placed"|status "shipped"|status "issue"/,
       `${t.name} description mentions a retired status`);
   }
 });

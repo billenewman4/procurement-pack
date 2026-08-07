@@ -1,5 +1,6 @@
 import { createEngine, ensureSchema, type Engine } from '../../bomdb/src/engine.ts';
 import { buildApp } from './app.ts';
+import { tokenForRole, type AuthOptions } from './auth.ts';
 
 /**
  * Token → DATABASE_URL map. Two env shapes, newest wins:
@@ -43,7 +44,40 @@ async function resolveEngine(token: string): Promise<Engine | null> {
   return pending;
 }
 
+/**
+ * MASTER_DATABASE_URL (optional) enables /auth/register + /auth/login. It is
+ * the admin/master connection — it must NEVER appear as a TOKEN_MAP value
+ * (master bypasses RLS; a token mapped to it would leak every user's rows),
+ * and the master engine is only ever handed to the auth routes.
+ */
+function buildAuth(): AuthOptions | undefined {
+  const masterUrl = process.env.MASTER_DATABASE_URL;
+  if (!masterUrl) {
+    console.log('bomdb-remote: MASTER_DATABASE_URL not set — /auth endpoints disabled');
+    return undefined;
+  }
+  if (Object.values(tokenMap).includes(masterUrl)) {
+    throw new Error('MASTER_DATABASE_URL must not be a TOKEN_MAP value — no user token may map to master');
+  }
+  let master: Promise<Engine> | undefined;
+  return {
+    master: () => {
+      if (!master) {
+        master = (async () => {
+          const engine = await createEngine(masterUrl);
+          await ensureSchema(engine);
+          return engine;
+        })();
+        // Drop failed attempts so a transient DB outage isn't cached forever.
+        master.catch(() => { master = undefined; });
+      }
+      return master;
+    },
+    tokenForRole: pgRole => tokenForRole(tokenMap, pgRole),
+  };
+}
+
 const port = Number(process.env.PORT ?? 8080);
-buildApp(resolveEngine).listen(port, () =>
+buildApp(resolveEngine, buildAuth()).listen(port, () =>
   console.log(`bomdb-remote listening on :${port}`),
 );

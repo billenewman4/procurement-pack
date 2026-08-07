@@ -89,6 +89,19 @@ CREATE TABLE IF NOT EXISTS line_item_options (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Password-auth accounts for ProcurePro (2026-08-07). The whitelist is the
+-- users table itself: only an email an admin has already put on a users row
+-- can register. MASTER-ONLY table — scoped roles get no grant (migrate.ts
+-- strips any that slip in) and RLS is enabled with no policies as a second
+-- fence; the table owner (master connection / local mode) bypasses both.
+CREATE TABLE IF NOT EXISTS app_accounts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL UNIQUE REFERENCES users(id),
+  email text NOT NULL UNIQUE,
+  password_hash text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS order_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   line_item_id uuid REFERENCES line_items(id) ON DELETE SET NULL,
@@ -118,6 +131,9 @@ ALTER TABLE project_specs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE line_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE line_item_options ENABLE ROW LEVEL SECURITY;
+-- app_accounts: RLS on, NO policies — scoped roles (who also hold no grant)
+-- can never read password hashes; only the owner/master connection can.
+ALTER TABLE app_accounts ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS pg_role text UNIQUE;
 

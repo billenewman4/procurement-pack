@@ -14,10 +14,10 @@ credentials, so isolation is enforced by the database, not the router.
 - Service: `bomdb-remote`, GCP project `carbonella`, region `us-central1`
 - URL: `https://bomdb-remote-869731474645.us-central1.run.app`
 - Config: `env.yaml` (gitignored, local canonical copy) — `TOKEN_MAP` JSON
-  of `{token: database_url}` and optionally `SOURCING_AGENT_URL`. Shipped
-  to GCP **Secret Manager** (`bomdb-token-map`, `bomdb-sourcing-url`) by
-  `scripts/sync-secrets.sh`; Cloud Run mounts them as env vars via
-  `--set-secrets`.
+  of `{token: database_url}` and optionally `SOURCING_AGENT_URL` and
+  `MASTER_DATABASE_URL`. Shipped to GCP **Secret Manager**
+  (`bomdb-token-map`, `bomdb-sourcing-url`) by `scripts/sync-secrets.sh`;
+  Cloud Run mounts them as env vars via `--set-secrets`.
 - All `database_url`s MUST be the Supabase **pooler** form
   (`<role>.<project-ref>@aws-0-us-west-1.pooler.supabase.com`) — Cloud Run
   egress is IPv4-only and the direct host is IPv6-only.
@@ -46,6 +46,24 @@ tools: `connect_vendor` and `get_job` (vendor recon), `list_sourcing_vendors`
 (catalog quoting). Leave it unset and a deployment degrades to plain bomdb
 instead of shipping tools that always fail — the deploy MUST set it for
 sourcing to appear at all.
+
+## Password sign-in (`/auth/register`, `/auth/login`)
+
+ProcurePro's email+password login proxies to these two endpoints
+(`src/auth.ts`). Registration is whitelist-gated: only an email an admin
+has already attached to a `users` row may create an account
+(`node --env-file=.env bomdb/scripts/set-user-email.ts <role> <email>`).
+Passwords are scrypt-hashed into the master-only `app_accounts` table;
+success answers `{token, name}` where `token` is the user's **existing**
+connector token, reverse-mapped from `TOKEN_MAP` by pg_role.
+
+Requires `MASTER_DATABASE_URL` (the bomdb/.env master connection, pooler
+form) in the deploy env — store it as a Secret Manager secret (e.g.
+`bomdb-master-url`) and add `MASTER_DATABASE_URL=bomdb-master-url:latest`
+to `--set-secrets`. Without it the endpoints answer 503 and everything
+else works as before. It must NEVER appear as a `TOKEN_MAP` value (the
+server refuses to boot if it does) — master bypasses RLS and is used by
+the auth routes only.
 
 ## Onboard a teammate
 

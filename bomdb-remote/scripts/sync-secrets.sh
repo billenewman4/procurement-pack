@@ -22,4 +22,15 @@ process.stdout.write(JSON.parse(l.slice('SOURCING_AGENT_URL: '.length)));
 " | gcloud secrets create bomdb-sourcing-url --data-file=- --replication-policy=automatic --project carbonella
 fi
 
+if grep -q '^MASTER_DATABASE_URL: ' env.yaml; then
+  node -e "
+const l = require('fs').readFileSync('env.yaml','utf8').split('\n').find(x => x.startsWith('MASTER_DATABASE_URL: '));
+process.stdout.write(JSON.parse(l.slice('MASTER_DATABASE_URL: '.length)));
+" | gcloud secrets versions add bomdb-master-url --data-file=- --project carbonella 2>/dev/null \
+    || node -e "
+const l = require('fs').readFileSync('env.yaml','utf8').split('\n').find(x => x.startsWith('MASTER_DATABASE_URL: '));
+process.stdout.write(JSON.parse(l.slice('MASTER_DATABASE_URL: '.length)));
+" | gcloud secrets create bomdb-master-url --data-file=- --replication-policy=automatic --project carbonella
+fi
+
 echo "secrets pushed — redeploy to apply immediately"

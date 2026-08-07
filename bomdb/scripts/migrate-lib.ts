@@ -180,4 +180,17 @@ export async function migrate(engine: Engine): Promise<void> {
       `GRANT SELECT, INSERT, UPDATE ON projects, project_specs, line_items, order_events, line_item_options, vendors TO ${pg_role}`);
   }
   console.log(`grants refreshed for ${roles.length} role(s): ${roles.map(r => r.pg_role).join(', ')}`);
+
+  // ---- 6. 2026-08-07 password auth: app_accounts is MASTER-ONLY ----
+  // Step 4 (schema.sql) already created app_accounts and enabled RLS on it.
+  // The email whitelist needs no DDL: users.email has existed NOT NULL UNIQUE
+  // since the base schema — an admin puts an address on a users row (see
+  // scripts/set-user-email.ts) and that address may then self-register.
+  // Scoped roles must never see password hashes, so strip any privilege that
+  // could ever slip in (REVOKE no-ops when there is nothing to revoke).
+  for (const { pg_role } of roles) {
+    if (!/^[a-z][a-z0-9_]{1,30}$/.test(pg_role)) continue;
+    await engine.query(`REVOKE ALL ON app_accounts FROM ${pg_role}`);
+  }
+  console.log(`app_accounts locked to the master connection (revoked from ${roles.length} scoped role(s))`);
 }

@@ -229,6 +229,32 @@ test('sourcing_slug column exists, nullable, and is writable post-migration', as
   assert.equal(updated.sourcing_slug, 'amazon-business');
 });
 
+test('app_accounts exists, is usable by the owner, and scoped roles get nothing', async () => {
+  // owner (master) can insert/read
+  await engine.query(
+    `INSERT INTO app_accounts (user_id, email, password_hash)
+     VALUES ($1, 'e@x.com', 'scrypt$deadbeef$deadbeef')`, [ids.eshan]);
+  const rows = await engine.query<{ email: string }>(`SELECT email FROM app_accounts`);
+  assert.equal(rows.length, 1);
+  // one account per user and per email
+  await assert.rejects(
+    engine.query(
+      `INSERT INTO app_accounts (user_id, email, password_hash) VALUES ($1, 'other@x.com', 'h')`,
+      [ids.eshan]),
+    /unique|duplicate/i);
+  // the scoped role from the grant loop holds NO privilege on it
+  for (const priv of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) {
+    const [{ ok }] = await engine.query<{ ok: boolean }>(
+      `SELECT has_table_privilege('eshan_r', 'app_accounts', $1) AS ok`, [priv]);
+    assert.equal(ok, false, `eshan_r should not have ${priv} on app_accounts`);
+  }
+  // and RLS is enabled with no policies (second fence)
+  const [{ rls }] = await engine.query<{ rls: boolean }>(
+    `SELECT relrowsecurity AS rls FROM pg_class WHERE relname = 'app_accounts'`);
+  assert.equal(rls, true);
+  await engine.query(`DELETE FROM app_accounts`); // keep the rerun snapshot clean
+});
+
 test('rerunning the migration changes nothing', async () => {
   const snapshot = async () => ({
     vendors: (await engine.query<{ n: number }>(`SELECT count(*)::int AS n FROM vendors`))[0].n,

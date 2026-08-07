@@ -8,6 +8,7 @@ import { buildToolDefs } from '../../bomdb/src/tool-defs.ts';
 import { GET_STARTED_TOOL, getStartedText, EMPTY_WORKSPACE_HINT } from './concierge.ts';
 import { GET_SKILL_TOOL, getSkillText, getSkillStub } from './skills.ts';
 import { SOURCING_TOOLS, isSourcingTool, callSourcing, sourcingUrl } from './sourcing.ts';
+import { mountAuth, type AuthOptions } from './auth.ts';
 
 const PING_TOOL = {
   name: 'ping',
@@ -72,12 +73,18 @@ function buildServer(engine: Engine) {
 /** Maps a URL token to that user's engine; null → 401. */
 export type EngineResolver = (token: string) => Promise<Engine | null>;
 
-export function buildApp(resolveEngine: EngineResolver) {
+export function buildApp(resolveEngine: EngineResolver, auth?: AuthOptions) {
   const app = express();
   app.use(express.json());
+  // Cloud Run sits behind Google's proxy; trust it so req.ip (used by the
+  // auth rate limiter) is the caller, not the frontend.
+  app.set('trust proxy', true);
 
   // /healthz is reserved by Google's frontend on run.app — use /health.
   app.get('/health', (_req, res) => { res.status(200).send('ok'); });
+
+  // /auth/register + /auth/login (503 when no master connection configured).
+  mountAuth(app, auth ?? null);
 
   app.post('/mcp/:token', async (req, res) => {
     const engine = await resolveEngine(req.params.token).catch(err => {
